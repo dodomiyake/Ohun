@@ -17,7 +17,7 @@ describe('web shells', () => {
   it('renders the authentication shell by default', () => {
     renderRoute('/auth');
 
-    expect(screen.getByRole('heading', { level: 1, name: 'ChitChat' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Ohun' })).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeDisabled();
     expect(screen.getByLabelText('Password')).toBeDisabled();
     expect(screen.getByPlaceholderText('Enter your password')).toBeInTheDocument();
@@ -66,7 +66,7 @@ describe('web shells', () => {
     const signIn = screen.getByRole('button', { name: 'Sign in' });
     expect(signIn).toBeDisabled();
     fireEvent.click(signIn);
-    expect(screen.getByRole('heading', { level: 1, name: 'ChitChat' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Ohun' })).toBeInTheDocument();
   });
 
   it('exposes a skip link that targets main', () => {
@@ -85,10 +85,10 @@ describe('web shells', () => {
     expect(screen.queryByRole('button', { name: /dark mode|toggle dark/i })).not.toBeInTheDocument();
   });
 
-  it('applies the Nunito brand token to the ChitChat heading', () => {
+  it('applies the Nunito brand token to the Ohun heading', () => {
     renderRoute('/auth');
 
-    const heading = screen.getByRole('heading', { level: 1, name: 'ChitChat' });
+    const heading = screen.getByRole('heading', { level: 1, name: 'Ohun' });
     expect(heading.className).toContain(authStyles.title);
     // CSS Modules + tokens: brand face is Nunito ExtraBold (800).
     expect(authStyles.title).toBeTruthy();

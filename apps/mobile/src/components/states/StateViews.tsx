@@ -1,4 +1,4 @@
-import { colors, radii, spacing } from '@chitchat/design-tokens';
+import { colors, radii, spacing } from '@ohun/design-tokens';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 function Frame({
@@ -35,7 +35,7 @@ export function LoadingState() {
     <View style={styles.state} accessibilityRole="progressbar" accessibilityLabel="Loading">
       <ActivityIndicator size="large" color={colors.primary} />
       <Text style={styles.title}>Loading</Text>
-      <Text style={styles.body}>Preparing your ChitChat workspace.</Text>
+      <Text style={styles.body}>Preparing your Ohun workspace.</Text>
     </View>
   );
 }
@@ -54,7 +54,7 @@ export function OfflineState() {
   return (
     <Frame
       title="You are offline"
-      body="Check your connection. ChitChat will reconnect when the network is available."
+      body="Check your connection. Ohun will reconnect when the network is available."
       action="Try again"
       tone="offline"
     />

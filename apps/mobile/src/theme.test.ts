@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colors, spacing } from '@chitchat/design-tokens';
+import { colors, spacing } from '@ohun/design-tokens';
 
 describe('mobile token mapping', () => {
   it('maps shared design tokens for StyleSheet usage', () => {

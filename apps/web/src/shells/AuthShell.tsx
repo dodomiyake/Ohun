@@ -6,10 +6,10 @@ export function AuthShell() {
     <section className={styles.page} aria-labelledby="auth-title">
       <div className={styles.card}>
         <div className={styles.logoRow}>
-          <img src="/brand/chitchat-icon.svg" alt="" width={64} height={64} />
+          <img src="/brand/ohun-icon.svg" alt="" width={64} height={64} />
         </div>
         <h1 id="auth-title" className={styles.title}>
-          ChitChat
+          Ohun
         </h1>
         <p className={styles.subtitle}>
           Sign in to continue private conversations with friends and family.

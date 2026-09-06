@@ -1,4 +1,4 @@
-import { colors, radii, spacing, typography } from '@chitchat/design-tokens';
+import { colors, radii, spacing, typography } from '@ohun/design-tokens';
 import { StyleSheet, Text, TextInput, View, Image } from 'react-native';
 import { sharedStyles } from '../theme';
 
@@ -8,12 +8,12 @@ export function AuthShell() {
     <View style={styles.page} accessibilityLabel="Authentication shell">
       <View style={styles.card}>
         <Image
-          source={require('../../assets/brand/chitchat-icon-light-192.png')}
+          source={require('../../assets/brand/ohun-icon-light-192.png')}
           style={styles.logo}
           accessibilityIgnoresInvertColors
           accessible={false}
         />
-        <Text style={[sharedStyles.title, styles.brand]}>ChitChat</Text>
+        <Text style={[sharedStyles.title, styles.brand]}>Ohun</Text>
         <Text style={sharedStyles.body}>
           Sign in to continue private conversations with friends and family.
         </Text>

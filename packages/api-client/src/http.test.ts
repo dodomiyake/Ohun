@@ -5,7 +5,7 @@ describe('createHttpClient', () => {
   it('parses a successful health response', async () => {
     const body = {
       status: 'ok',
-      service: 'chitchat-api',
+      service: 'ohun-api',
       version: '2.0.0-m1',
       timestamp: new Date().toISOString(),
     };

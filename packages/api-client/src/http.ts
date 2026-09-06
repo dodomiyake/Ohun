@@ -1,7 +1,7 @@
 import {
   healthResponseSchema,
   type HealthResponse,
-} from '@chitchat/contracts';
+} from '@ohun/contracts';
 
 export type CreateHttpClientOptions = {
   baseUrl: string;

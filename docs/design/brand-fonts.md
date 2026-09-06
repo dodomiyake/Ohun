@@ -1,13 +1,13 @@
-# ChitChat brand fonts
+# Ohun brand fonts
 
 ## Brand display font
 
 - **Family:** Nunito ExtraBold
 - **Weight:** 800
-- **Use:** ChitChat wordmark / brand headings only (web shell brand link, auth title, native auth brand text)
+- **Use:** Ohun wordmark / brand headings only (web shell brand link, auth title, native auth brand text)
 - **Not used for:** general body copy, labels, or UI chrome (those keep Inter / system UI)
 
-ChitChat does **not** claim ownership of the Nunito font software.
+Ohun does **not** claim ownership of the Nunito font software.
 
 ## Source and licence
 
@@ -20,9 +20,9 @@ ChitChat does **not** claim ownership of the Nunito font software.
 - **Principal asset:** `apps/web/public/fonts/Nunito-ExtraBold.woff2` (self-hosted)
 - **Fallback formats:** none required (modern evergreen browsers support WOFF2)
 - **CSS:** `@font-face` family `Nunito`, `font-weight: 800`, `font-display: swap`
-- **Token:** `--cc-font-brand: Nunito, "Segoe UI", system-ui, sans-serif`
+- **Token:** `--ohun-font-brand: Nunito, "Segoe UI", system-ui, sans-serif`
 - **Loading:** preload the WOFF2 in `index.html`; no Google Fonts network request for Nunito; no base64-in-CSS
-- **Body font:** remains `Inter, system-ui, sans-serif` (`--cc-font`)
+- **Body font:** remains `Inter, system-ui, sans-serif` (`--ohun-font`)
 
 ## Native (Expo)
 

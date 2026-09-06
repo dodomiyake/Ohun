@@ -2,7 +2,7 @@ name: Quality
 
 on:
   push:
-    branches: [main, 'm1/**']
+    branches: [main, 'm1/**', 'm2/**']
   pull_request:
 
 jobs:
@@ -25,9 +25,9 @@ jobs:
 
       - name: Build shared packages
         run: |
-          npm run build -w @chitchat/design-tokens
-          npm run build -w @chitchat/contracts
-          npm run build -w @chitchat/api-client
+          npm run build -w @ohun/design-tokens
+          npm run build -w @ohun/contracts
+          npm run build -w @ohun/api-client
 
       - name: Lint
         run: npm run lint
@@ -67,9 +67,9 @@ jobs:
 
       - name: Build shared packages
         run: |
-          npm run build -w @chitchat/design-tokens
-          npm run build -w @chitchat/contracts
-          npm run build -w @chitchat/api-client
+          npm run build -w @ohun/design-tokens
+          npm run build -w @ohun/contracts
+          npm run build -w @ohun/api-client
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -87,3 +87,23 @@ jobs:
           name: playwright-report
           path: tests/e2e/playwright-report/
           retention-days: 7
+
+  mongodb-transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Run replica-set transaction tests
+        run: npm run test:integration -w @ohun/api

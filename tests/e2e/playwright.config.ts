@@ -17,7 +17,7 @@ export default defineConfig({
   },
   webServer: {
     command:
-      'npm run build -w @chitchat/web && npm run preview -w @chitchat/web -- --host 127.0.0.1 --port 4173 --strictPort',
+      'npm run build -w @ohun/web && npm run preview -w @ohun/web -- --host 127.0.0.1 --port 4173 --strictPort',
     cwd: rootDir,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,

@@ -1,4 +1,4 @@
-# ChitChat V2
+# Ohun V2
 
 Accessible, secure, private real-time messaging for friends and family.
 
@@ -81,7 +81,7 @@ The V1 MERN prototype is preserved via Git tag `legacy-v1-prototype`. It is not 
 
 ## Brand assets
 
-ChitChat logos live under:
+Ohun logos live under:
 
 - `apps/web/public/brand/`
 - `apps/mobile/assets/brand/`

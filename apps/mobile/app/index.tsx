@@ -1,5 +1,5 @@
-import { colors, spacing } from '@chitchat/design-tokens';
-import type { ShellView } from '@chitchat/contracts';
+import { colors, spacing } from '@ohun/design-tokens';
+import type { ShellView } from '@ohun/contracts';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';

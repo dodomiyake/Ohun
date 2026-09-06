@@ -1,5 +1,5 @@
 {
-  "extends": "@chitchat/config/tsconfig.react.json",
+  "extends": "@ohun/config/tsconfig.react.json",
   "compilerOptions": {
     "types": ["vite/client", "vitest/globals"]
   },

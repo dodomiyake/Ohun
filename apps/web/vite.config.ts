@@ -7,10 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['brand/chitchat-icon.svg', 'fonts/Nunito-ExtraBold.woff2'],
+      includeAssets: ['brand/ohun-icon.svg', 'fonts/Nunito-ExtraBold.woff2'],
       manifest: {
-        name: 'ChitChat',
-        short_name: 'ChitChat',
+        name: 'Ohun',
+        short_name: 'Ohun',
         description: 'Private real-time messaging for friends and family',
         theme_color: '#063ac1',
         background_color: '#f8f9fd',
@@ -18,19 +18,19 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: '/brand/chitchat-icon.svg',
+            src: '/brand/ohun-icon.svg',
             sizes: 'any',
             type: 'image/svg+xml',
             purpose: 'any',
           },
           {
-            src: '/brand/chitchat-icon-light-192.png',
+            src: '/brand/ohun-icon-light-192.png',
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: '/brand/chitchat-icon-light-512.png',
+            src: '/brand/ohun-icon-light-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',

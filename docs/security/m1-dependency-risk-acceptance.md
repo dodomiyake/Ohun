@@ -45,13 +45,13 @@ These GitHub Security Advisories are the only leaf advisories reported with iden
 
 | Package | Direct? | Dependency path | Usage | Why tooling-scoped | Why suggested fix is invalid |
 |---------|---------|-----------------|-------|--------------------|------------------------------|
-| `image-size` | No | `expo` → `@expo/metro` / Metro → `image-size` **and** `react-native` → `@react-native/community-cli-plugin` → Metro → `image-size` | Build / development (Metro bundler asset sizing) | Invoked by Metro while bundling; not part of ChitChat auth, API, or message processing | npm suggests Expo 53.x major downgrade; incompatible with SDK 57 |
+| `image-size` | No | `expo` → `@expo/metro` / Metro → `image-size` **and** `react-native` → `@react-native/community-cli-plugin` → Metro → `image-size` | Build / development (Metro bundler asset sizing) | Invoked by Metro while bundling; not part of Ohun auth, API, or message processing | npm suggests Expo 53.x major downgrade; incompatible with SDK 57 |
 | `metro` | No | `expo` → `@expo/metro` → `metro`; `react-native` → community CLI plugin → `metro` | Build / development | JavaScript bundler for Expo/RN local and CI native tooling | Same invalid Expo 53 / RN 0.72 suggestions |
 | `metro-config` | No | `metro` ↔ `metro-config`; `@react-native/metro-config` → `metro-config` | Build / development | Metro configuration loader | Same invalid downgrades |
 | `metro-transform-worker` | No | `metro` → `metro-transform-worker` | Build / development | Metro transform worker process | Same invalid downgrades |
 | `@expo/metro` | No | `expo` → `@expo/cli` / `@expo/metro-config` → `@expo/metro` | Build / development | Expo’s Metro integration | Same invalid Expo downgrade |
 | `@expo/metro-config` | No | `expo` → `@expo/metro-config` | Build / development | Expo Metro config | Same invalid Expo downgrade |
-| `@expo/cli` | No | `expo` → `@expo/cli` | Development / native build tooling | Expo CLI; not shipped as ChitChat API/web production runtime | Same invalid Expo downgrade |
+| `@expo/cli` | No | `expo` → `@expo/cli` | Development / native build tooling | Expo CLI; not shipped as Ohun API/web production runtime | Same invalid Expo downgrade |
 | `@react-native/community-cli-plugin` | No | `react-native` → `@react-native/community-cli-plugin` | Development / native build tooling | RN CLI/Metro plugin | npm suggests RN 0.72.x downgrade; breaks SDK 57 |
 | `@react-native/metro-config` | No | community CLI plugin / worklets → `@react-native/metro-config` | Build / development | RN Metro config package | Same invalid RN downgrade |
 | `@react-native/virtualized-lists` | No | `react-native` → `@react-native/virtualized-lists` (audit edge via RN tooling graph) | Flagged via RN package graph; no separate leaf advisory beyond Metro/`image-size` chain | Remains accepted only as part of the Expo/RN tooling graph for M1; not an auth/API/browser-message path | RN 0.72 downgrade invalid |

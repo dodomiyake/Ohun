@@ -5,7 +5,7 @@ export function LoadingState() {
     <div className={styles.state} role="status" aria-live="polite">
       <div className={styles.spinner} aria-hidden="true" />
       <h1 className={styles.title}>Loading</h1>
-      <p className={styles.body}>Preparing your ChitChat workspace.</p>
+      <p className={styles.body}>Preparing your Ohun workspace.</p>
       <span className={styles.srOnly}>Content is loading</span>
     </div>
   );
@@ -32,7 +32,7 @@ export function OfflineState() {
       <div className={styles.iconOffline} aria-hidden="true" />
       <h1 className={styles.title}>You are offline</h1>
       <p className={styles.body}>
-        Check your connection. ChitChat will reconnect when the network is available.
+        Check your connection. Ohun will reconnect when the network is available.
       </p>
       <button type="button" className={styles.action} disabled>
         Try again

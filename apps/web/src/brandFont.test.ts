@@ -15,8 +15,8 @@ describe('web brand font assets', () => {
     expect(css).not.toMatch(/font-display:\s*block;/);
     expect(css).not.toMatch(/DejaVu/);
     expect(css).not.toMatch(/\.woff'/);
-    expect(css).toMatch(/--cc-font:\s*Inter/);
-    expect(css).toMatch(/--cc-font-brand:\s*Nunito/);
+    expect(css).toMatch(/--ohun-font:\s*Inter/);
+    expect(css).toMatch(/--ohun-font-brand:\s*Nunito/);
   });
 
   it('preloads the self-hosted WOFF2 and does not request Nunito from Google Fonts', () => {

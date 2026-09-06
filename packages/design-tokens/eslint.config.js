@@ -1,3 +1,3 @@
-import { baseConfig } from '@chitchat/config/eslint.base.js';
+import { baseConfig } from '@ohun/config/eslint.base.js';
 
 export default [...baseConfig];

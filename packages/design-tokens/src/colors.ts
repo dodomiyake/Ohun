@@ -1,5 +1,5 @@
 /**
- * ChitChat V2 colour tokens from approved Stitch design system
+ * Ohun V2 colour tokens from approved Stitch design system
  * (project 16264346330507370332). Light theme only.
  */
 export const colors = {

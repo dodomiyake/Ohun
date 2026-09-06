@@ -1,26 +1,26 @@
 {
-  "name": "chitchat",
+  "name": "ohun",
   "private": true,
   "version": "2.0.0-m1",
-  "description": "ChitChat V2 — accessible, secure, private real-time messaging",
+  "description": "Ohun V2 — accessible, secure, private real-time messaging",
   "workspaces": [
     "apps/*",
     "packages/*",
     "tests/e2e"
   ],
   "scripts": {
-    "dev:web": "npm run dev -w @chitchat/web",
-    "dev:api": "npm run dev -w @chitchat/api",
-    "dev:mobile": "npm run start -w @chitchat/mobile",
-    "build:packages": "npm run build -w @chitchat/design-tokens && npm run build -w @chitchat/contracts && npm run build -w @chitchat/api-client",
+    "dev:web": "npm run dev -w @ohun/web",
+    "dev:api": "npm run dev -w @ohun/api",
+    "dev:mobile": "npm run start -w @ohun/mobile",
+    "build:packages": "npm run build -w @ohun/design-tokens && npm run build -w @ohun/contracts && npm run build -w @ohun/api-client",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run build:packages && npm run typecheck --workspaces --if-present",
     "test": "npm run build:packages && npm run test --workspaces --if-present",
-    "build": "npm run build:packages && npm run build -w @chitchat/web && npm run build -w @chitchat/api && npm run build -w @chitchat/mobile",
-    "build:web": "npm run build:packages && npm run build -w @chitchat/web",
-    "build:api": "npm run build:packages && npm run build -w @chitchat/api",
-    "validate:mobile": "npm run validate -w @chitchat/mobile",
-    "test:e2e": "npm run test:e2e -w @chitchat/e2e"
+    "build": "npm run build:packages && npm run build -w @ohun/web && npm run build -w @ohun/api && npm run build -w @ohun/mobile",
+    "build:web": "npm run build:packages && npm run build -w @ohun/web",
+    "build:api": "npm run build:packages && npm run build -w @ohun/api",
+    "validate:mobile": "npm run validate -w @ohun/mobile",
+    "test:e2e": "npm run test:e2e -w @ohun/e2e"
   },
   "engines": {
     "node": ">=22.13"
