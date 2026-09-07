@@ -36,4 +36,20 @@ export const nativeAuthApi = {
   async verifyLink(token: string) { return okResponseSchema.parse(await post('/api/v1/auth/verification/link', { token })); },
   async resendVerification(email: string) { return okResponseSchema.parse(await post('/api/v1/auth/verification/resend', { email })); },
   async login(input: LoginRequest) { return authResponseSchema.parse(await post('/api/v1/auth/login', input)); },
+  async refresh(refreshToken: string) { return authResponseSchema.parse(await post('/api/v1/auth/refresh', { refreshToken })); },
+  async logout(refreshToken?: string, accessToken?: string) {
+    if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+    let response: Response;
+    try {
+      response = await fetch(`${apiBaseUrl}/api/v1/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        body: JSON.stringify(refreshToken ? { refreshToken } : {}),
+      });
+    } catch { throw new ApiError('offline', 'You are signed out on this device. The server could not be reached.'); }
+    if (!response.ok) throw new ApiError('request_failed', 'You are signed out on this device. The server session may still be active.', response.status);
+    return okResponseSchema.parse(await response.json());
+  },
+  async requestPasswordReset(email: string) { return okResponseSchema.parse(await post('/api/v1/auth/password/reset/request', { email })); },
+  async confirmPasswordReset(token: string, newPassword: string) { return okResponseSchema.parse(await post('/api/v1/auth/password/reset/confirm', { token, newPassword })); },
 };

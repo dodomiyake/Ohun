@@ -1,4 +1,5 @@
 import { colors, radii, spacing } from '@ohun/design-tokens';
+import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const NAV = ['Chats', 'People', 'Requests', 'Settings'] as const;
@@ -26,8 +27,9 @@ export function MobileNavShell() {
             key={label}
             style={styles.navItem}
             accessibilityRole="tab"
-            accessibilityState={{ selected: index === 0, disabled: true }}
-            disabled
+            accessibilityState={{ selected: index === 0, disabled: label !== 'Settings' }}
+            disabled={label !== 'Settings'}
+            onPress={label === 'Settings' ? () => router.push('/(app)/settings') : undefined}
           >
             <View style={[styles.icon, index === 0 && styles.iconActive]} />
             <Text style={[styles.navLabel, index === 0 && styles.navLabelActive]}>{label}</Text>

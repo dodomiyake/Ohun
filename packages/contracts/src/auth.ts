@@ -9,6 +9,11 @@ export const verificationCodeRequestSchema = z.object({ email, code: z.string().
 export const verificationLinkRequestSchema = z.object({ token: z.string().min(32).max(128) }).strict();
 export const resendVerificationRequestSchema = z.object({ email }).strict();
 export const loginRequestSchema = z.object({ identifier: z.string().min(1).max(254), password: z.string(), device }).strict();
+export const refreshRequestSchema = z.object({ refreshToken: z.string().min(32).max(256) }).strict();
+export const logoutRequestSchema = z.object({ refreshToken: z.string().min(32).max(256).optional() }).strict();
+export const passwordResetRequestSchema = z.object({ email }).strict();
+export const passwordResetConfirmRequestSchema = z.object({ token: z.string().min(32).max(128), newPassword: z.string() }).strict();
+export const passwordChangeRequestSchema = z.object({ currentPassword: z.string(), newPassword: z.string(), refreshToken: z.string().min(32).max(256) }).strict();
 
 export const verificationRequiredResponseSchema = z.object({ ok: z.literal(true), verificationRequired: z.literal(true) });
 export const okResponseSchema = z.object({ ok: z.literal(true) });
@@ -25,3 +30,8 @@ export const meResponseSchema = z.object({
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 export type LoginRequest = z.infer<typeof loginRequestSchema>;
+export type RefreshRequest = z.infer<typeof refreshRequestSchema>;
+export type LogoutRequest = z.infer<typeof logoutRequestSchema>;
+export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
+export type PasswordResetConfirmRequest = z.infer<typeof passwordResetConfirmRequestSchema>;
+export type PasswordChangeRequest = z.infer<typeof passwordChangeRequestSchema>;

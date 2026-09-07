@@ -22,17 +22,42 @@ describe('native authentication', () => {
     await expect(nativeAuthApi.resendVerification('person@example.test')).rejects.toMatchObject({ code: 'offline', message: 'Check your internet connection and try again.' });
   });
 
+  it('uses the explicit native refresh credential and parses its rotated successor', async () => {
+    vi.stubEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.example.test');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ accessToken: 'next-access', refreshToken: 'next-refresh', expiresIn: 900, user: { id: 'u1', email: 'person@example.test', username: 'person', emailVerified: true } }) });
+    vi.stubGlobal('fetch', fetchMock);
+    const { nativeAuthApi } = await import('./api');
+    await expect(nativeAuthApi.refresh('a'.repeat(43))).resolves.toMatchObject({ accessToken: 'next-access', refreshToken: 'next-refresh' });
+    expect(fetchMock).toHaveBeenCalledWith('https://api.example.test/api/v1/auth/refresh', expect.objectContaining({ body: JSON.stringify({ refreshToken: 'a'.repeat(43) }) }));
+  });
+
   it('stores only refresh credentials in Expo SecureStore', () => {
     const secureStore = readFileSync(join(root, 'src/auth/secure-store.ts'), 'utf8');
     const provider = readFileSync(join(root, 'src/auth/AuthProvider.tsx'), 'utf8');
     expect(secureStore).toContain("from 'expo-secure-store'");
     expect(secureStore).toContain('WHEN_UNLOCKED_THIS_DEVICE_ONLY');
     expect(provider).toContain('writeRefreshToken(response.refreshToken)');
+    expect(provider).toContain('nativeAuthApi.refresh(token)');
+    expect(provider).toContain('deleteRefreshToken()');
     expect(provider).not.toMatch(/AsyncStorage|writeAccessToken|setItemAsync\([^)]*accessToken/);
   });
 
   it('removes deep-link token parameters and never logs them', () => {
     const route = readFileSync(join(root, 'app/verify-link.tsx'), 'utf8');
+    expect(route).toContain("router.setParams({ token: '' })");
+    expect(route).not.toMatch(/console\.|analytics|AsyncStorage|SecureStore/);
+  });
+
+  it('clears the local credential before requesting server logout and exposes an accessible action', () => {
+    const provider = readFileSync(join(root, 'src/auth/AuthProvider.tsx'), 'utf8');
+    const settings = readFileSync(join(root, 'app/(app)/settings.tsx'), 'utf8');
+    expect(provider.indexOf('deleteRefreshToken()')).toBeLessThan(provider.lastIndexOf('nativeAuthApi.logout'));
+    expect(settings).toContain('accessibilityRole="button"');
+    expect(settings).toContain("'Sign out'");
+  });
+
+  it('removes password-reset link tokens from route state and never persists or logs them', () => {
+    const route = readFileSync(join(root, 'app/reset-password.tsx'), 'utf8');
     expect(route).toContain("router.setParams({ token: '' })");
     expect(route).not.toMatch(/console\.|analytics|AsyncStorage|SecureStore/);
   });
