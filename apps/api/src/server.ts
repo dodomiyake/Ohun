@@ -4,6 +4,10 @@ import type { ApiEnv } from '@ohun/contracts';
 import { createApp } from './app.js';
 import { connectMongoIfConfigured } from './db.js';
 import { loadEnv } from './env.js';
+import { createAuthService } from './auth-service.js';
+import { MemoryEmailProvider } from './providers.js';
+import { MemoryPasswordBlocklist } from './security.js';
+import { requireSocketAuthentication } from './socket-auth.js';
 
 export async function startServer(env: ApiEnv = loadEnv()) {
   const app = createApp(env);
@@ -16,9 +20,11 @@ export async function startServer(env: ApiEnv = loadEnv()) {
     },
   });
 
-  // M1: no room join, messaging, or auth handshake yet.
+  const auth = createAuthService({ env, email: new MemoryEmailProvider(), blocklist: new MemoryPasswordBlocklist() });
+  requireSocketAuthentication(io, auth);
+
   io.on('connection', (socket) => {
-    socket.emit('ready', { milestone: 'm1', messaging: false });
+    socket.emit('ready', { milestone: 'm2.2', messaging: false });
   });
 
   const connected = await connectMongoIfConfigured(env.MONGO_URI);
