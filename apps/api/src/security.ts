@@ -1,5 +1,5 @@
 import { hash, verify, type Algorithm } from '@node-rs/argon2';
-import { createHmac, hkdfSync, randomBytes, randomInt } from 'node:crypto';
+import { createHmac, hkdfSync, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
 import { SignJWT, jwtVerify } from 'jose';
 
 export interface PasswordBlocklist { contains(password: string): Promise<boolean>; }
@@ -14,6 +14,11 @@ const contexts = { refresh: 'ohun-refresh-v1', verifyLink: 'ohun-verify-link-v1'
 export type HmacPurpose = keyof typeof contexts;
 export function derivePurposeKey(master: Uint8Array, purpose: HmacPurpose): Buffer { return Buffer.from(hkdfSync('sha256', master, new Uint8Array(), contexts[purpose], 32)); }
 export function tokenHash(master: Uint8Array, purpose: HmacPurpose, value: string) { return createHmac('sha256', derivePurposeKey(master, purpose)).update(value, 'utf8').digest('base64url'); }
+export function matchesTokenHash(master: Uint8Array, purpose: HmacPurpose, value: string, expected: string) {
+  const actualBytes = Buffer.from(tokenHash(master, purpose, value), 'base64url');
+  const expectedBytes = Buffer.from(expected, 'base64url');
+  return actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes);
+}
 export interface AccessClaims { sub: string; sid: string; jti: string; }
 export async function signAccessToken(claims: AccessClaims, secret: Uint8Array, issuer: string, audience: string, ttlSeconds: number) { return new SignJWT({ sid: claims.sid, typ: 'access' }).setProtectedHeader({ alg: 'HS256' }).setSubject(claims.sub).setJti(claims.jti).setIssuer(issuer).setAudience(audience).setIssuedAt().setExpirationTime(`${ttlSeconds}s`).sign(secret); }
 export async function verifyAccessToken(token: string, secret: Uint8Array, issuer: string, audience: string) { const result = await jwtVerify(token, secret, { algorithms: ['HS256'], issuer, audience }); if (result.payload.typ !== 'access' || typeof result.payload.sid !== 'string' || !result.payload.jti || !result.payload.sub) throw new Error('Invalid access token claims'); return result.payload; }
