@@ -42,8 +42,8 @@ export function createAuthService({ env, email, blocklist, now: getNow = () => n
     const now = getNow();
     const throttle = await VerificationThrottle.findOneAndUpdate(
       { userId },
-      { $setOnInsert: { userId, failedAttempts: 0, sendCount: 0 }, $set: { lastSentAt: now }, $inc: { sendCount: 1 } },
-      { new: true, upsert: true, setDefaultsOnInsert: true },
+      { $setOnInsert: { userId }, $set: { lastSentAt: now }, $inc: { sendCount: 1 } },
+      { new: true, upsert: true, setDefaultsOnInsert: false },
     );
     if (throttle.lockedUntil && throttle.lockedUntil > now) throw new AuthError(429, 'verification_locked', 'Verification is temporarily locked.');
     if (throttle.sendWindowStartedAt && now.getTime() - throttle.sendWindowStartedAt.getTime() < 3_600_000 && throttle.sendCount > 5) {
