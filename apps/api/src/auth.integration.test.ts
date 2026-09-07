@@ -6,7 +6,7 @@ import { createApp } from './app.js';
 import { loadEnv } from './env.js';
 import { MemoryEmailProvider } from './providers.js';
 import { MemoryPasswordBlocklist } from './security.js';
-import { EmailVerificationChallenge, RefreshToken, Session, User, VerificationThrottle } from './models.js';
+import { EmailVerificationChallenge, PasswordResetToken, RefreshToken, SecurityEvent, Session, User, VerificationThrottle } from './models.js';
 
 const env = loadEnv({
   NODE_ENV: 'test', PORT: '5000', CLIENT_ORIGIN: 'http://localhost:5173', MONGO_URI: '',
@@ -94,5 +94,74 @@ describe('M2.2 mobile-first authentication', () => {
     const code = message.match(/Verification code: (\d{6})/)?.[1];
     expect((await request(app).post('/api/v1/auth/verification/link').send({ token: link })).status).toBe(200);
     expect((await request(app).post('/api/v1/auth/verification/code').send({ email: 'person@example.test', code })).status).toBe(400);
+  });
+
+  it('rotates native refresh credentials once and revokes the family on replay', async () => {
+    await register();
+    const code = email.messages[0]?.text.match(/Verification code: (\d{6})/)?.[1];
+    await request(app).post('/api/v1/auth/verification/code').send({ email: 'person@example.test', code });
+    const login = await request(app).post('/api/v1/auth/login').send({ identifier: 'person', password: 'correct horse battery 🔒', device: { platform: 'native', name: 'Phone' } });
+
+    const refreshed = await request(app).post('/api/v1/auth/refresh').send({ refreshToken: login.body.refreshToken });
+    expect(refreshed.status).toBe(200);
+    expect(refreshed.body.refreshToken).not.toBe(login.body.refreshToken);
+    expect(await RefreshToken.countDocuments()).toBe(2);
+
+    const replay = await request(app).post('/api/v1/auth/refresh').send({ refreshToken: login.body.refreshToken });
+    expect(replay.status).toBe(401);
+    expect(replay.body.error.code).toBe('refresh_reused');
+    expect((await Session.findOne())?.revokeReason).toBe('refresh_reuse_detected');
+    expect(await RefreshToken.countDocuments({ revokedAt: { $ne: null } })).toBe(2);
+  });
+
+  it('logs out with a refresh credential after the access token is unavailable', async () => {
+    await register();
+    const code = email.messages[0]?.text.match(/Verification code: (\d{6})/)?.[1];
+    await request(app).post('/api/v1/auth/verification/code').send({ email: 'person@example.test', code });
+    const login = await request(app).post('/api/v1/auth/login').send({ identifier: 'person', password: 'correct horse battery 🔒', device: { platform: 'native', name: 'Phone' } });
+
+    expect((await request(app).post('/api/v1/auth/logout').send({ refreshToken: login.body.refreshToken })).body).toEqual({ ok: true });
+    expect((await Session.findOne())?.revokeReason).toBe('logout');
+    expect((await RefreshToken.findOne())?.revokeReason).toBe('logout');
+    expect((await request(app).post('/api/v1/auth/logout').send({ refreshToken: login.body.refreshToken })).status).toBe(200);
+    expect((await request(app).post('/api/v1/auth/refresh').send({ refreshToken: login.body.refreshToken })).status).toBe(401);
+  });
+
+  it('resets a password once, returns a generic request response, and revokes every session', async () => {
+    expect((await request(app).post('/api/v1/auth/password/reset/request').send({ email: 'missing@example.test' })).body).toEqual({ ok: true });
+    await register();
+    const code = email.messages[0]?.text.match(/Verification code: (\d{6})/)?.[1];
+    await request(app).post('/api/v1/auth/verification/code').send({ email: 'person@example.test', code });
+    await request(app).post('/api/v1/auth/login').send({ identifier: 'person', password: 'correct horse battery 🔒', device: { platform: 'native', name: 'Phone' } });
+
+    const requested = await request(app).post('/api/v1/auth/password/reset/request').send({ email: 'person@example.test' });
+    expect(requested.body).toEqual({ ok: true });
+    const resetToken = email.messages.at(-1)?.text.match(/token=([^\s]+)/)?.[1];
+    expect(resetToken).toBeTypeOf('string');
+    expect(JSON.stringify(await PasswordResetToken.findOne())).not.toContain(resetToken);
+
+    const confirmed = await request(app).post('/api/v1/auth/password/reset/confirm').send({ token: resetToken, newPassword: 'a new password phrase 🔐' });
+    expect(confirmed.body).toEqual({ ok: true });
+    expect((await Session.findOne())?.revokeReason).toBe('password_reset');
+    expect((await RefreshToken.findOne())?.revokeReason).toBe('password_reset');
+    expect((await request(app).post('/api/v1/auth/password/reset/confirm').send({ token: resetToken, newPassword: 'another password phrase 🔐' })).status).toBe(400);
+    expect((await request(app).post('/api/v1/auth/login').send({ identifier: 'person', password: 'a new password phrase 🔐', device: { platform: 'native', name: 'Phone' } })).status).toBe(200);
+    expect(await SecurityEvent.countDocuments({ type: 'password_reset' })).toBe(1);
+  });
+
+  it('changes a password, rotates the current credential, and revokes other sessions', async () => {
+    await register();
+    const code = email.messages[0]?.text.match(/Verification code: (\d{6})/)?.[1];
+    await request(app).post('/api/v1/auth/verification/code').send({ email: 'person@example.test', code });
+    const current = await request(app).post('/api/v1/auth/login').send({ identifier: 'person', password: 'correct horse battery 🔒', device: { platform: 'native', name: 'Current phone' } });
+    const other = await request(app).post('/api/v1/auth/login').send({ identifier: 'person', password: 'correct horse battery 🔒', device: { platform: 'native', name: 'Other phone' } });
+
+    const changed = await request(app).post('/api/v1/auth/password/change').set('Authorization', `Bearer ${current.body.accessToken}`).send({ currentPassword: 'correct horse battery 🔒', newPassword: 'my replacement password 🔐', refreshToken: current.body.refreshToken });
+    expect(changed.status).toBe(200);
+    expect(changed.body.refreshToken).not.toBe(current.body.refreshToken);
+    expect((await Session.findOne({ deviceName: 'Other phone' }))?.revokeReason).toBe('password_changed');
+    expect((await request(app).post('/api/v1/auth/refresh').send({ refreshToken: other.body.refreshToken })).status).toBe(401);
+    expect((await request(app).post('/api/v1/auth/refresh').send({ refreshToken: changed.body.refreshToken })).status).toBe(200);
+    expect(await SecurityEvent.countDocuments({ type: 'password_changed' })).toBe(1);
   });
 });
