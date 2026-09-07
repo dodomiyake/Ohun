@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
-    "test:integration": "vitest run src/refresh-rotation.integration.test.ts"
+    "pretest:integration": "npm run build -w @ohun/contracts",
+    "test:integration": "vitest run --no-file-parallelism src/*.integration.test.ts"
   },
   "dependencies": {
     "@ohun/contracts": "*",
