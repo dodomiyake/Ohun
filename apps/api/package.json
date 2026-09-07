@@ -10,7 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
-    "test:integration": "vitest run src/refresh-rotation.integration.test.ts"
+    "test:integration": "vitest run src/*.integration.test.ts"
   },
   "dependencies": {
     "@ohun/contracts": "*",
