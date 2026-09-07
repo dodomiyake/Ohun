@@ -1,25 +1,25 @@
 {
   "expo": {
-    "name": "ChitChat",
-    "slug": "chitchat",
+    "name": "Ohun",
+    "slug": "ohun",
     "version": "2.0.0",
     "orientation": "portrait",
-    "icon": "./assets/brand/chitchat-icon-light-1024.png",
+    "icon": "./assets/brand/ohun-icon-light-1024.png",
     "userInterfaceStyle": "light",
-    "scheme": "chitchat",
+    "scheme": "ohun",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chitchat.app"
+      "bundleIdentifier": "com.ohun.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/brand/chitchat-icon-light-1024.png",
+        "foregroundImage": "./assets/brand/ohun-icon-light-1024.png",
         "backgroundColor": "#f8f9fd"
       },
-      "package": "com.chitchat.app"
+      "package": "com.ohun.app"
     },
     "web": {
-      "favicon": "./assets/brand/chitchat-icon-light-192.png"
+      "favicon": "./assets/brand/ohun-icon-light-192.png"
     },
     "plugins": [
       "expo-router",
@@ -27,7 +27,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#f8f9fd",
-          "image": "./assets/brand/chitchat-icon-light-1024.png",
+          "image": "./assets/brand/ohun-icon-light-1024.png",
           "imageWidth": 200,
           "resizeMode": "contain"
         }

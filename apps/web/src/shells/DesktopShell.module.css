@@ -3,33 +3,33 @@
   display: grid;
   grid-template-columns: 72px 320px 1fr;
   min-height: calc(100vh - 120px);
-  background: var(--cc-background);
+  background: var(--ohun-background);
 }
 
 .rail {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--cc-space-sm);
-  padding: var(--cc-space-md) 0;
-  background: var(--cc-surface);
-  border-right: 1px solid var(--cc-outline-variant);
+  gap: var(--ohun-space-sm);
+  padding: var(--ohun-space-md) 0;
+  background: var(--ohun-surface);
+  border-right: 1px solid var(--ohun-outline-variant);
 }
 
 .rail button {
   position: relative;
-  width: var(--cc-touch);
-  height: var(--cc-touch);
+  width: var(--ohun-touch);
+  height: var(--ohun-touch);
   border: none;
-  border-radius: var(--cc-radius-lg);
+  border-radius: var(--ohun-radius-lg);
   background: transparent;
-  color: var(--cc-on-surface-variant);
+  color: var(--ohun-on-surface-variant);
   cursor: default;
 }
 
 .rail button[aria-current='page'] {
-  background: var(--cc-secondary-container);
-  color: var(--cc-primary);
+  background: var(--ohun-secondary-container);
+  color: var(--ohun-primary);
 }
 
 .rail button[aria-current='page']::before {
@@ -40,7 +40,7 @@
   bottom: 8px;
   width: 4px;
   border-radius: 0 4px 4px 0;
-  background: var(--cc-primary);
+  background: var(--ohun-primary);
 }
 
 .railIcon {
@@ -55,12 +55,12 @@
 
 .listPane,
 .conversation {
-  background: var(--cc-surface);
+  background: var(--ohun-surface);
   min-height: 0;
 }
 
 .listPane {
-  border-right: 1px solid var(--cc-outline-variant);
+  border-right: 1px solid var(--ohun-outline-variant);
   display: flex;
   flex-direction: column;
 }
@@ -70,8 +70,8 @@
   display: flex;
   align-items: center;
   min-height: 64px;
-  padding: 0 var(--cc-space-md);
-  border-bottom: 1px solid var(--cc-outline-variant);
+  padding: 0 var(--ohun-space-md);
+  border-bottom: 1px solid var(--ohun-outline-variant);
 }
 
 .listHeader h1,
@@ -84,7 +84,7 @@
 .listBody {
   flex: 1;
   overflow: auto;
-  padding: var(--cc-space-sm);
+  padding: var(--ohun-space-sm);
 }
 
 .chatRow {
@@ -92,83 +92,83 @@
   align-items: center;
   gap: 12px;
   min-height: 72px;
-  padding: var(--cc-space-sm) var(--cc-space-md);
-  border-radius: var(--cc-radius-lg);
+  padding: var(--ohun-space-sm) var(--ohun-space-md);
+  border-radius: var(--ohun-radius-lg);
 }
 
 .chatRow[aria-current='true'] {
-  background: var(--cc-surface-container-low);
+  background: var(--ohun-surface-container-low);
 }
 
 .avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--cc-secondary-container);
+  background: var(--ohun-secondary-container);
   flex-shrink: 0;
 }
 
 .conversationBody {
   flex: 1;
-  padding: var(--cc-space-lg);
+  padding: var(--ohun-space-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--cc-space-md);
-  background: var(--cc-background);
+  gap: var(--ohun-space-md);
+  background: var(--ohun-background);
 }
 
 .bubbleIn,
 .bubbleOut {
   max-width: 70%;
-  padding: var(--cc-space-sm) var(--cc-space-md);
-  border-radius: var(--cc-radius-lg);
+  padding: var(--ohun-space-sm) var(--ohun-space-md);
+  border-radius: var(--ohun-radius-lg);
   font-size: 1rem;
   line-height: 1.5;
 }
 
 .bubbleIn {
   align-self: flex-start;
-  background: var(--cc-surface);
+  background: var(--ohun-surface);
   border-bottom-left-radius: 4px;
 }
 
 .bubbleOut {
   align-self: flex-end;
-  background: var(--cc-primary);
-  color: var(--cc-on-primary);
+  background: var(--ohun-primary);
+  color: var(--ohun-on-primary);
   border-bottom-right-radius: 4px;
 }
 
 .composer {
   display: flex;
-  gap: var(--cc-space-sm);
-  padding: var(--cc-space-md);
-  background: var(--cc-surface);
-  border-top: 1px solid var(--cc-outline-variant);
+  gap: var(--ohun-space-sm);
+  padding: var(--ohun-space-md);
+  background: var(--ohun-surface);
+  border-top: 1px solid var(--ohun-outline-variant);
 }
 
 .composer input {
   flex: 1;
-  min-height: var(--cc-touch);
+  min-height: var(--ohun-touch);
   border: 1px solid transparent;
-  border-radius: var(--cc-radius-lg);
-  padding: 0 var(--cc-space-md);
-  background: var(--cc-surface-container-low);
+  border-radius: var(--ohun-radius-lg);
+  padding: 0 var(--ohun-space-md);
+  background: var(--ohun-surface-container-low);
   font: inherit;
 }
 
 .composer button {
-  min-width: var(--cc-touch);
-  min-height: var(--cc-touch);
+  min-width: var(--ohun-touch);
+  min-height: var(--ohun-touch);
   border: 1px solid transparent;
-  border-radius: var(--cc-radius-full);
+  border-radius: var(--ohun-radius-full);
   font: inherit;
   font-weight: 600;
 }
 
 .composer button:not(:disabled) {
-  background: var(--cc-primary);
-  color: var(--cc-on-primary);
+  background: var(--ohun-primary);
+  color: var(--ohun-on-primary);
   cursor: pointer;
 }
 

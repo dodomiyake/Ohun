@@ -16,7 +16,7 @@ async function assertNoBlockingAxe(page: import('@playwright/test').Page) {
   ).toEqual([]);
 }
 
-test.describe('ChitChat V2 M1 web shells', () => {
+test.describe('Ohun V2 M1 web shells', () => {
   test('loads the authentication shell with accessible heading', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('pageerror', (error) => {
@@ -24,7 +24,7 @@ test.describe('ChitChat V2 M1 web shells', () => {
     });
 
     await page.goto('/auth');
-    await expect(page.getByRole('heading', { name: 'ChitChat', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Ohun', level: 1 })).toBeVisible();
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
     await expect(page.getByPlaceholder('Enter your password')).toBeVisible();

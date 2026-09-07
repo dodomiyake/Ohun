@@ -21,8 +21,8 @@ export function AppShell() {
       <header className={styles.chrome}>
         <div className={styles.topBar}>
           <a className={styles.brand} href="/">
-            <img src="/brand/chitchat-icon.svg" alt="" width={36} height={36} />
-            <span>ChitChat</span>
+            <img src="/brand/ohun-icon.svg" alt="" width={36} height={36} />
+            <span>Ohun</span>
           </a>
           <nav className={styles.nav} aria-label="Shell previews">
             {LINKS.map((link) => (

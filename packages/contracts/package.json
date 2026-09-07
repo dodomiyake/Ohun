@@ -1,5 +1,5 @@
 {
-  "name": "@chitchat/contracts",
+  "name": "@ohun/contracts",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -21,7 +21,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@chitchat/config": "*",
+    "@ohun/config": "*",
     "eslint": "^9.21.0",
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.26.0",

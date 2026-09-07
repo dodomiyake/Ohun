@@ -1,4 +1,4 @@
-import { colors, radii, spacing } from '@chitchat/design-tokens';
+import { colors, radii, spacing } from '@ohun/design-tokens';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const NAV = ['Chats', 'People', 'Requests', 'Settings'] as const;

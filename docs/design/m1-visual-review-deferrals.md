@@ -6,7 +6,7 @@ During the Milestone 1 visual and accessibility review of PR #1, the following i
 
 **Finding:** The M1 auth shell is a simplified structural preview compared with the approved Stitch Login screen (for example: social sign-in buttons, “Forgot password?”, remember-me, and exact marketing copy are not reproduced).
 
-**Why deferred:** Milestone 1 delivers static shells only. Functional authentication and a full design pass against every Stitch auth detail belong to a later milestone. The current shell still shows ChitChat branding, centred readable layout, correct heading hierarchy, and disabled form controls.
+**Why deferred:** Milestone 1 delivers static shells only. Functional authentication and a full design pass against every Stitch auth detail belong to a later milestone. The current shell still shows Ohun branding, centred readable layout, correct heading hierarchy, and disabled form controls.
 
 **Follow-up:** Align auth presentation with the approved Stitch Login when authentication is implemented.
 

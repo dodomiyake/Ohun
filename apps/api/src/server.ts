@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { Server as SocketServer } from 'socket.io';
-import type { ApiEnv } from '@chitchat/contracts';
+import type { ApiEnv } from '@ohun/contracts';
 import { createApp } from './app.js';
 import { connectMongoIfConfigured } from './db.js';
 import { loadEnv } from './env.js';

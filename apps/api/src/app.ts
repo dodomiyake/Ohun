@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import type { ApiEnv } from '@chitchat/contracts';
-import { healthResponseSchema } from '@chitchat/contracts';
+import type { ApiEnv } from '@ohun/contracts';
+import { healthResponseSchema } from '@ohun/contracts';
 
 export function createApp(env: ApiEnv) {
   const app = express();
@@ -19,7 +19,7 @@ export function createApp(env: ApiEnv) {
   app.get('/health', (_req, res) => {
     const payload = healthResponseSchema.parse({
       status: 'ok',
-      service: 'chitchat-api',
+      service: 'ohun-api',
       version: '2.0.0-m1',
       timestamp: new Date().toISOString(),
     });

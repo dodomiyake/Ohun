@@ -1,6 +1,6 @@
 # Fonts (web)
 
-Self-hosted **Nunito ExtraBold** (weight 800) for ChitChat brand wordmarks only.
+Self-hosted **Nunito ExtraBold** (weight 800) for Ohun brand wordmarks only.
 
 - File: `Nunito-ExtraBold.woff2`
 - Source: Nunito Project / Google Fonts static ExtraBold, converted to WOFF2

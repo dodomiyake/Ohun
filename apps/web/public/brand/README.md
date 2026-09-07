@@ -1,10 +1,10 @@
-# ChitChat brand assets
+# Ohun brand assets
 
 ## Included variants
 
-- `chitchat-icon.svg` — transparent master icon.
-- `chitchat-icon-light.svg` — light app-tile variant.
-- `chitchat-icon-dark.svg` — dark app-tile variant.
+- `ohun-icon.svg` — transparent master icon.
+- `ohun-icon-light.svg` — light app-tile variant.
+- `ohun-icon-dark.svg` — dark app-tile variant.
 - PNG exports at 1024, 512, 192, 180, 64 and 32 pixels.
 
 ## Recommended use

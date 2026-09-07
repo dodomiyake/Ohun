@@ -9,7 +9,8 @@ describe('API health', () => {
       NODE_ENV: 'test',
       PORT: '5000',
       CLIENT_ORIGIN: 'http://localhost:5173',
-      JWT_SECRET: 'test-secret',
+      JWT_ACCESS_SECRET: 'test-secret',
+      TOKEN_HMAC_MASTER: 'test-secret',
       COOKIE_SECURE: 'false',
       MONGO_URI: '',
     });
@@ -19,6 +20,6 @@ describe('API health', () => {
 
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('ok');
-    expect(response.body.service).toBe('chitchat-api');
+    expect(response.body.service).toBe('ohun-api');
   });
 });

@@ -1,4 +1,4 @@
-import { colors, radii, spacing, typography } from '@chitchat/design-tokens';
+import { colors, radii, spacing, typography } from '@ohun/design-tokens';
 import { StyleSheet } from 'react-native';
 
 export const tokens = {

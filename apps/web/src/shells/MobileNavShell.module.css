@@ -10,9 +10,9 @@
   align-items: center;
   justify-content: space-between;
   min-height: 64px;
-  padding: 0 var(--cc-space-md);
-  background: var(--cc-surface);
-  border-bottom: 1px solid var(--cc-outline-variant);
+  padding: 0 var(--ohun-space-md);
+  background: var(--ohun-surface);
+  border-bottom: 1px solid var(--ohun-outline-variant);
 }
 
 .header h1 {
@@ -22,7 +22,7 @@
 
 .content {
   flex: 1;
-  padding: var(--cc-space-md);
+  padding: var(--ohun-space-md);
 }
 
 .list {
@@ -31,7 +31,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--cc-space-sm);
+  gap: var(--ohun-space-sm);
 }
 
 .item {
@@ -39,16 +39,16 @@
   align-items: center;
   gap: 12px;
   min-height: 72px;
-  padding: var(--cc-space-sm) var(--cc-space-md);
-  background: var(--cc-surface);
-  border-radius: var(--cc-radius-lg);
+  padding: var(--ohun-space-sm) var(--ohun-space-md);
+  background: var(--ohun-surface);
+  border-radius: var(--ohun-radius-lg);
 }
 
 .avatar {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: var(--cc-secondary-container);
+  background: var(--ohun-secondary-container);
   flex-shrink: 0;
 }
 
@@ -64,7 +64,7 @@
 }
 
 .meta span {
-  color: var(--cc-on-surface-variant);
+  color: var(--ohun-on-surface-variant);
   font-size: 0.875rem;
   white-space: nowrap;
   overflow: hidden;
@@ -74,17 +74,17 @@
 .bottomNav {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: var(--cc-surface);
-  border-top: 1px solid var(--cc-outline-variant);
-  padding-top: var(--cc-space-xs);
-  padding-bottom: calc(var(--cc-space-xs) + env(safe-area-inset-bottom, 0px));
+  background: var(--ohun-surface);
+  border-top: 1px solid var(--ohun-outline-variant);
+  padding-top: var(--ohun-space-xs);
+  padding-bottom: calc(var(--ohun-space-xs) + env(safe-area-inset-bottom, 0px));
 }
 
 .bottomNav button {
-  min-height: var(--cc-touch);
+  min-height: var(--ohun-touch);
   border: none;
   background: transparent;
-  color: var(--cc-on-surface-variant);
+  color: var(--ohun-on-surface-variant);
   font: inherit;
   font-size: 0.625rem;
   font-weight: 500;
@@ -106,7 +106,7 @@
 }
 
 .bottomNav button[aria-current='page'] {
-  color: var(--cc-primary);
+  color: var(--ohun-primary);
 }
 
 .icon {
@@ -119,5 +119,5 @@
 
 .bottomNav button[aria-current='page'] .icon {
   opacity: 0.9;
-  background: var(--cc-primary);
+  background: var(--ohun-primary);
 }

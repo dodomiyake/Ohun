@@ -1,4 +1,4 @@
-import { colors, radii, spacing } from '@chitchat/design-tokens';
+import { colors, radii, spacing } from '@ohun/design-tokens';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 export function TabletShell() {

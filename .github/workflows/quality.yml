@@ -2,7 +2,7 @@ name: Quality
 
 on:
   push:
-    branches: [main, 'm1/**']
+    branches: [main, 'm1/**', 'm2/**']
   pull_request:
 
 jobs:
@@ -25,9 +25,9 @@ jobs:
 
       - name: Build shared packages
         run: |
-          npm run build -w @chitchat/design-tokens
-          npm run build -w @chitchat/contracts
-          npm run build -w @chitchat/api-client
+          npm run build -w @ohun/design-tokens
+          npm run build -w @ohun/contracts
+          npm run build -w @ohun/api-client
 
       - name: Lint
         run: npm run lint
@@ -67,9 +67,9 @@ jobs:
 
       - name: Build shared packages
         run: |
-          npm run build -w @chitchat/design-tokens
-          npm run build -w @chitchat/contracts
-          npm run build -w @chitchat/api-client
+          npm run build -w @ohun/design-tokens
+          npm run build -w @ohun/contracts
+          npm run build -w @ohun/api-client
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
@@ -87,3 +87,50 @@ jobs:
           name: playwright-report
           path: tests/e2e/playwright-report/
           retention-days: 7
+
+  mongodb-transactions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Start MongoDB replica set
+        run: |
+          docker run --detach --name ohun-mongo --publish 27017:27017 mongo:7.0 --replSet rs0 --bind_ip_all
+          for attempt in {1..30}; do
+            if docker exec ohun-mongo mongosh --quiet --eval 'db.adminCommand({ ping: 1 })' >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker logs ohun-mongo
+              exit 1
+            fi
+            sleep 1
+          done
+          docker exec ohun-mongo mongosh --quiet --eval 'rs.initiate({_id:"rs0",members:[{_id:0,host:"127.0.0.1:27017"}]})'
+          for attempt in {1..30}; do
+            if docker exec ohun-mongo mongosh --quiet --eval 'if (!db.hello().isWritablePrimary) quit(1)' >/dev/null 2>&1; then
+              break
+            fi
+            if [ "$attempt" -eq 30 ]; then
+              docker logs ohun-mongo
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Run replica-set transaction tests
+        run: npm run test:integration -w @ohun/api
+        env:
+          MONGO_TEST_URI: mongodb://127.0.0.1:27017/ohun_test?replicaSet=rs0

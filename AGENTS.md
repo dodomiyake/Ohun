@@ -1,8 +1,8 @@
-# ChitChat V2 — Agent Instructions
+# Ohun V2 — Agent Instructions
 
 ## Product
 
-ChitChat V2 is an accessible, secure, private real-time messaging application for friends and family.
+Ohun V2 is an accessible, secure, private real-time messaging application for friends and family.
 
 Supported platforms:
 
@@ -12,9 +12,13 @@ Supported platforms:
 - Installable desktop PWA on supported browsers
 - Mobile browsers as a fallback
 
+## Delivery priority
+
+Ohun V2 is a native mobile app first. Android and iOS are the primary product targets. Build and validate the Expo/React Native experience before implementing functional browser authentication or messaging. The existing web/PWA shell may remain buildable, but new web product functionality is deferred until the native mobile application is stable.
+
 ## Approved design
 
-Use only the approved ChitChat V2 Stitch project:
+Use only the approved Ohun V2 Stitch project:
 
 https://stitch.withgoogle.com/projects/16264346330507370332
 

@@ -5,7 +5,7 @@ describe('contracts', () => {
   it('parses a valid health response', () => {
     const parsed = healthResponseSchema.parse({
       status: 'ok',
-      service: 'chitchat-api',
+      service: 'ohun-api',
       version: '2.0.0-m1',
       timestamp: new Date().toISOString(),
     });
@@ -17,9 +17,13 @@ describe('contracts', () => {
     expect(() => shellViewSchema.parse('dark')).toThrow();
   });
 
-  it('applies API env defaults without requiring MONGO_URI', () => {
-    const env = apiEnvSchema.parse({});
+  it('applies test API env defaults without requiring MONGO_URI', () => {
+    const env = apiEnvSchema.parse({ NODE_ENV: 'test' });
     expect(env.PORT).toBe(5000);
     expect(env.MONGO_URI).toBe('');
+  });
+
+  it('rejects insecure production configuration', () => {
+    expect(() => apiEnvSchema.parse({ NODE_ENV: 'production' })).toThrow();
   });
 });

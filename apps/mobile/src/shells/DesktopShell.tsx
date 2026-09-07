@@ -1,4 +1,4 @@
-import { colors, radii, spacing } from '@chitchat/design-tokens';
+import { colors, radii, spacing } from '@ohun/design-tokens';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const RAIL = ['Chats', 'People', 'Settings'] as const;
