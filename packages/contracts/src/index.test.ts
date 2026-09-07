@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { healthResponseSchema, shellViewSchema, apiEnvSchema } from './index.js';
+import { healthResponseSchema, shellViewSchema, apiEnvSchema, loginRequestSchema, registerRequestSchema } from './index.js';
 
 describe('contracts', () => {
   it('parses a valid health response', () => {
@@ -25,5 +25,11 @@ describe('contracts', () => {
 
   it('rejects insecure production configuration', () => {
     expect(() => apiEnvSchema.parse({ NODE_ENV: 'production' })).toThrow();
+  });
+
+  it('validates native registration and login payloads strictly', () => {
+    expect(registerRequestSchema.parse({ email: 'person@example.test', username: 'person', password: 'not-trimmed' }).password).toBe('not-trimmed');
+    expect(loginRequestSchema.parse({ identifier: 'person', password: 'secret', device: { platform: 'native', name: 'Phone' } }).device.platform).toBe('native');
+    expect(() => loginRequestSchema.parse({ identifier: 'person', password: 'secret', device: { platform: 'web', name: 'Browser' } })).toThrow();
   });
 });
