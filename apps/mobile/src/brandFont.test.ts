@@ -15,7 +15,7 @@ describe('mobile brand font configuration', () => {
 
   it('loads Nunito_800ExtraBold with splash control and failure-safe path', () => {
     const layout = readFileSync(join(root, 'app/_layout.tsx'), 'utf8');
-    expect(layout).toContain("from '@expo-google-fonts/nunito'");
+    expect(layout).toContain("from '@expo-google-fonts/nunito/800ExtraBold'");
     expect(layout).toContain('Nunito_800ExtraBold');
     expect(layout).toContain('expo-splash-screen');
     expect(layout).toContain('preventAutoHideAsync');

@@ -1,9 +1,11 @@
 import { Stack } from 'expo-router';
-import { useFonts, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
+import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold';
+import { useFonts } from 'expo-font';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider } from '../src/auth/AuthProvider';
 
 void SplashScreen.preventAutoHideAsync().catch(() => {
   /* Splash may already be hidden in some environments (e.g. tests). */
@@ -39,7 +41,9 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
-        <Stack screenOptions={{ headerShown: false }} />
+        <AuthProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </AuthProvider>
       </SafeAreaProvider>
     </QueryClientProvider>
   );
