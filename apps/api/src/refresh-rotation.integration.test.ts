@@ -2,12 +2,13 @@ import mongoose from 'mongoose';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { RefreshToken, Session, User } from './models.js';
 import { RefreshReplayError, rotateRefreshToken } from './refresh-rotation.js';
 
 let replicaSet: MongoMemoryReplSet;
-let databaseDirectory: string;
+let databaseDirectory: string | undefined;
 
 async function seed(tokenHash = 'current-token') {
   const now = new Date();
@@ -19,9 +20,16 @@ async function seed(tokenHash = 'current-token') {
 
 describe('refresh rotation transaction', () => {
   beforeAll(async () => {
-    databaseDirectory = await mkdtemp(join(process.cwd(), 'mongo-test-'));
-    replicaSet = await MongoMemoryReplSet.create({ binary: { version: '7.0.14' }, instanceOpts: [{ dbPath: databaseDirectory }], replSet: { count: 1, storageEngine: 'wiredTiger' } });
-    await mongoose.connect(replicaSet.getUri());
+    const injectedUri = process.env.MONGO_TEST_URI?.trim();
+    if (injectedUri) {
+      await mongoose.connect(injectedUri);
+    } else {
+      // WiredTiger requires filesystem operations that are not guaranteed on
+      // checked-out workspace/overlay mounts. Use the native temp volume.
+      databaseDirectory = await mkdtemp(join(tmpdir(), 'ohun-mongo-test-'));
+      replicaSet = await MongoMemoryReplSet.create({ binary: { version: '7.0.14' }, instanceOpts: [{ dbPath: databaseDirectory }], replSet: { count: 1, storageEngine: 'wiredTiger' } });
+      await mongoose.connect(replicaSet.getUri());
+    }
     await Promise.all(Object.values(mongoose.models).map((model) => model.syncIndexes()));
   }, 120_000);
 
