@@ -63,7 +63,7 @@ describe('refresh rotation transaction', () => {
     const { refresh } = await seed('rollback');
     await RefreshToken.create({ sessionId: refresh.sessionId, userId: refresh.userId, familyId: refresh.familyId, tokenHash: 'duplicate', expiresAt: new Date(Date.now() + 3_600_000) });
     await expect(rotateRefreshToken({ tokenHash: 'rollback', successorHash: 'duplicate', successorExpiresAt: new Date(Date.now() + 3_600_000), lastUsedThrottleMs: 300_000, idleLifetimeMs: 3_600_000 })).rejects.toThrow();
-    expect((await RefreshToken.findById(refresh._id))?.usedAt).toBeNull();
+    expect((await RefreshToken.findById(refresh._id))?.usedAt).toBeUndefined();
   });
 
   it('detects replay and revokes the token family', async () => {
