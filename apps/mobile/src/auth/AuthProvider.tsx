@@ -4,7 +4,8 @@ import { ApiError, nativeAuthApi } from './api';
 import { nativeCredentialStore, type CredentialStore } from './secure-store';
 
 type AuthState = { status: 'restoring' | 'signedOut' | 'signedIn'; accessToken: string | null; user: { id: string; email: string; username: string } | null; restorationPending: boolean };
-type AuthContextValue = AuthState & { login(input: LoginRequest): Promise<void>; restoreSession(): Promise<void>; signOut(): Promise<void>; signOutLocal(): Promise<void> };
+type AuthUser = NonNullable<AuthState['user']>;
+type AuthContextValue = AuthState & { login(input: LoginRequest): Promise<void>; restoreSession(): Promise<void>; updateUser(user: AuthUser): void; signOut(): Promise<void>; signOutLocal(): Promise<void> };
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children, store = nativeCredentialStore }: PropsWithChildren<{ store?: CredentialStore }>) {
@@ -50,6 +51,8 @@ export function AuthProvider({ children, store = nativeCredentialStore }: PropsW
     await store.deleteRefreshToken();
   }, [store]);
 
+  const updateUser = useCallback((user: AuthUser) => { setState((current) => current.status === 'signedIn' ? { ...current, user } : current); }, []);
+
   const signOut = useCallback(async () => {
     const accessToken = state.accessToken ?? undefined;
     const refreshToken = await store.readRefreshToken().catch(() => null);
@@ -58,7 +61,7 @@ export function AuthProvider({ children, store = nativeCredentialStore }: PropsW
     await nativeAuthApi.logout(refreshToken ?? undefined, accessToken);
   }, [state.accessToken, store]);
 
-  const value = useMemo(() => ({ ...state, login, restoreSession, signOut, signOutLocal }), [state, login, restoreSession, signOut, signOutLocal]);
+  const value = useMemo(() => ({ ...state, login, restoreSession, updateUser, signOut, signOutLocal }), [state, login, restoreSession, updateUser, signOut, signOutLocal]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

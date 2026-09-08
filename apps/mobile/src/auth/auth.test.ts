@@ -61,4 +61,12 @@ describe('native authentication', () => {
     expect(route).toContain("router.setParams({ token: '' })");
     expect(route).not.toMatch(/console\.|analytics|AsyncStorage|SecureStore/);
   });
+
+  it('uses the native image picker and never stores avatar bytes in general-purpose storage', () => {
+    const profile = readFileSync(join(root, 'app/(app)/profile.tsx'), 'utf8');
+    expect(profile).toContain("from 'expo-image-picker'");
+    expect(profile).toContain('requestMediaLibraryPermissionsAsync');
+    expect(profile).toContain('accessibilityLabel="Choose profile photo"');
+    expect(profile).not.toMatch(/AsyncStorage|SecureStore|base64/);
+  });
 });

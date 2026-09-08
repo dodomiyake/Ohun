@@ -9,7 +9,7 @@ export default function LoginScreen() {
   const params = useLocalSearchParams<{ verified?: string; linkError?: string; logoutPending?: string }>();
   const auth = useAuth();
   const [identifier, setIdentifier] = useState(''); const [password, setPassword] = useState(''); const [show, setShow] = useState(false); const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  const submit = async () => { setBusy(true); setError(''); try { await auth.login({ identifier, password, device: { platform: 'native', name: `${Platform.OS} device` } }); router.replace('/(app)'); } catch (value) { setError(value instanceof ApiError || value instanceof Error ? value.message : 'Sign-in failed.'); } finally { setBusy(false); } };
+  const submit = async () => { setBusy(true); setError(''); try { await auth.login({ identifier, password, device: { platform: 'native', name: `${Platform.OS} device` } }); router.replace('/(app)/profile'); } catch (value) { setError(value instanceof ApiError || value instanceof Error ? value.message : 'Sign-in failed.'); } finally { setBusy(false); } };
   const retryRestore = async () => { setBusy(true); setError(''); try { await auth.restoreSession(); router.replace('/(app)'); } catch (value) { setError(value instanceof Error ? value.message : 'Your session could not be restored.'); } finally { setBusy(false); } };
   return <AuthFrame title="Welcome back" description="Sign in to continue your private conversations.">
     {params.verified === 'true' ? <Text style={authStyles.notice} accessibilityLiveRegion="polite">Email verified. You can now sign in.</Text> : null}

@@ -19,6 +19,7 @@ export default function SettingsScreen() {
     <View style={styles.content}>
       <Text style={styles.account}>{auth.user?.username}</Text>
       <Text style={styles.description}>Manage this device’s Ohun session.</Text>
+      <Pressable style={styles.profileButton} onPress={() => router.push('/(app)/profile')} accessibilityRole="button"><Text style={styles.profileButtonText}>Edit profile</Text></Pressable>
       <Pressable style={[styles.button, busy ? styles.disabled : null]} disabled={busy} onPress={() => void signOut()} accessibilityRole="button" accessibilityState={{ busy, disabled: busy }}>
         <Text style={styles.buttonText}>{busy ? 'Signing out…' : 'Sign out'}</Text>
       </Pressable>
@@ -34,6 +35,8 @@ const styles = StyleSheet.create({
   account: { color: colors.onSurface, fontSize: 18, fontWeight: '600' },
   description: { color: colors.onSurfaceVariant, fontSize: 16 },
   button: { minHeight: spacing.touchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radii.full, backgroundColor: colors.error, paddingHorizontal: spacing.lg },
+  profileButton: { minHeight: spacing.touchTarget, alignItems: 'center', justifyContent: 'center', borderRadius: radii.full, backgroundColor: colors.primary, paddingHorizontal: spacing.lg },
+  profileButtonText: { color: colors.onPrimary, fontSize: 16, fontWeight: '700' },
   disabled: { opacity: 0.55 },
   buttonText: { color: colors.onError, fontSize: 16, fontWeight: '700' },
 });
