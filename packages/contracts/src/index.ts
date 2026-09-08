@@ -16,6 +16,8 @@ export {
   passwordChangeRequestSchema,
   passwordResetConfirmRequestSchema,
   passwordResetRequestSchema,
+  profileResponseSchema,
+  profileUpdateRequestSchema,
   meResponseSchema,
   okResponseSchema,
   registerRequestSchema,
@@ -29,6 +31,7 @@ export {
   type PasswordChangeRequest,
   type PasswordResetConfirmRequest,
   type PasswordResetRequest,
+  type ProfileUpdateRequest,
   type RefreshRequest,
   type RegisterRequest,
 } from './auth.js';

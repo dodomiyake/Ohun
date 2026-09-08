@@ -1,12 +1,13 @@
 import mongoose from 'mongoose';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import request from 'supertest';
+import sharp from 'sharp';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from './app.js';
 import { loadEnv } from './env.js';
-import { MemoryEmailProvider } from './providers.js';
+import { MemoryAvatarStorage, MemoryEmailProvider } from './providers.js';
 import { MemoryPasswordBlocklist } from './security.js';
-import { EmailVerificationChallenge, PasswordResetToken, RefreshToken, SecurityEvent, Session, User, VerificationThrottle } from './models.js';
+import { EmailVerificationChallenge, PasswordResetToken, Profile, RefreshToken, SecurityEvent, Session, User, VerificationThrottle } from './models.js';
 
 const env = loadEnv({
   NODE_ENV: 'test', PORT: '5000', CLIENT_ORIGIN: 'http://localhost:5173', MONGO_URI: '',
@@ -18,7 +19,8 @@ const env = loadEnv({
 describe('M2.2 mobile-first authentication', () => {
   let replica: MongoMemoryReplSet | undefined;
   const email = new MemoryEmailProvider();
-  let app = createApp(env, { email, blocklist: new MemoryPasswordBlocklist() });
+  const avatarStorage = new MemoryAvatarStorage();
+  let app = createApp(env, { email, avatarStorage, blocklist: new MemoryPasswordBlocklist() });
 
   beforeAll(async () => {
     const configuredUri = process.env.MONGO_TEST_URI;
@@ -29,7 +31,7 @@ describe('M2.2 mobile-first authentication', () => {
     }
     await Promise.all(Object.values(mongoose.connection.models).map((model) => model.syncIndexes()));
   }, 60_000);
-  beforeEach(async () => { await mongoose.connection.dropDatabase(); email.messages.length = 0; app = createApp(env, { email, blocklist: new MemoryPasswordBlocklist() }); await Promise.all(Object.values(mongoose.connection.models).map((model) => model.syncIndexes())); }, 30_000);
+  beforeEach(async () => { await mongoose.connection.dropDatabase(); email.messages.length = 0; avatarStorage.files.clear(); app = createApp(env, { email, avatarStorage, blocklist: new MemoryPasswordBlocklist() }); await Promise.all(Object.values(mongoose.connection.models).map((model) => model.syncIndexes())); }, 30_000);
   afterAll(async () => { await mongoose.disconnect(); await replica?.stop(); });
 
   async function register(address = 'person@example.test', username = 'person') {
@@ -163,5 +165,28 @@ describe('M2.2 mobile-first authentication', () => {
     expect((await request(app).post('/api/v1/auth/refresh').send({ refreshToken: other.body.refreshToken })).status).toBe(401);
     expect((await request(app).post('/api/v1/auth/refresh').send({ refreshToken: changed.body.refreshToken })).status).toBe(200);
     expect(await SecurityEvent.countDocuments({ type: 'password_changed' })).toBe(1);
+  });
+
+  it('creates and edits a profile, changes username atomically, and normalizes its avatar', async () => {
+    await register();
+    const code = email.messages[0]?.text.match(/Verification code: (\d{6})/)?.[1];
+    await request(app).post('/api/v1/auth/verification/code').send({ email: 'person@example.test', code });
+    const login = await request(app).post('/api/v1/auth/login').send({ identifier: 'person', password: 'correct horse battery 🔒', device: { platform: 'native', name: 'Phone' } });
+    const authorization = `Bearer ${login.body.accessToken}`;
+
+    const profile = await request(app).put('/api/v1/profile').set('Authorization', authorization).send({ displayName: 'Person Name', username: 'new.person', bio: 'Private by default.', status: 'Available' });
+    expect(profile.status).toBe(200);
+    expect(profile.body).toMatchObject({ user: { username: 'new.person' }, profile: { displayName: 'Person Name', bio: 'Private by default.', status: 'Available' } });
+    expect((await User.findById(profile.body.user.id))?.usernameNormalized).toBe('new.person');
+    expect(Profile.schema.path('username')).toBeUndefined();
+    expect(await SecurityEvent.countDocuments({ type: 'username_changed' })).toBe(1);
+
+    const png = await sharp({ create: { width: 900, height: 600, channels: 3, background: '#3155d9' } }).png().toBuffer();
+    const avatar = await request(app).post('/api/v1/profile/avatar').set('Authorization', authorization).attach('avatar', png, { filename: 'avatar.png', contentType: 'image/png' });
+    expect(avatar.status).toBe(200);
+    const key = avatar.body.profile.avatarKey as string;
+    const stored = avatarStorage.files.get(key);
+    expect(stored?.contentType).toBe('image/webp');
+    expect(await sharp(stored?.bytes).metadata()).toMatchObject({ width: 512, height: 512, format: 'webp' });
   });
 });
