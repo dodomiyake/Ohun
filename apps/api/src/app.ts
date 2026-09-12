@@ -10,6 +10,8 @@ import { MemoryAvatarStorage, type AvatarStorageProvider } from './providers.js'
 import { MemoryPasswordBlocklist } from './security.js';
 import { ZodError } from 'zod';
 import { MulterError } from 'multer';
+import { createSessionRouter } from './session-router.js';
+import { createSessionService } from './session-service.js';
 import { createProfileRouter } from './profile-router.js';
 import { createProfileService } from './profile-service.js';
 
@@ -38,6 +40,7 @@ export function createApp(env: ApiEnv, dependencies?: AppDependencies) {
   });
 
   const auth = createAuthService({ env, email: dependencies?.email ?? new MemoryEmailProvider(), blocklist: dependencies?.blocklist ?? new MemoryPasswordBlocklist(), now: dependencies?.now });
+  app.use('/api/v1/sessions', createSessionRouter(auth, createSessionService(dependencies?.now)));
   app.use('/api/v1/auth', createAuthRouter(auth));
   app.use('/api/v1/profile', createProfileRouter(auth, createProfileService(dependencies?.avatarStorage ?? new MemoryAvatarStorage())));
 

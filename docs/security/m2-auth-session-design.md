@@ -68,3 +68,20 @@ After the native application is stable and approved, plan a separate web milesto
 - Authentication deep links are single-use, removed from navigation state after exchange and excluded from telemetry.
 - SecureStore unavailability and write/delete failures have explicit safe error paths.
 - The existing web shell must continue to compile and pass regression tests, but gains no functional authentication or messaging during mobile-first delivery.
+
+
+## M2.6 native Active Devices
+
+Settings → Active devices lists the account's unrevoked, unexpired sessions with the current device first. Only device name, platform, sign-in time and approximate activity time are returned. No location, IP, token hashes or token-family identifiers are exposed.
+
+- `GET /api/v1/sessions`: list active sessions.
+- `DELETE /api/v1/sessions/:sessionId`: revoke one owned session, including the current device when explicitly selected.
+- `POST /api/v1/sessions/revoke-others`: revoke every other session while retaining the authenticated session.
+
+All endpoints require bearer authentication, with IP and authenticated-account throttling. Revocation checks ownership and caller validity inside a transaction, serializes against concurrent session changes, and revokes refresh records in the same transaction. Repeated revocation of an owned session is idempotent. Unknown and other-account session IDs return the same 404. Access requests and new socket handshakes reject revoked sessions; disconnecting already-connected messaging sockets remains part of messaging delivery.
+
+Device revocation events use strict event-specific schemas, validated again at the model boundary. Audit-write failure cannot undo successful revocation; a structured operational alert contains only the event type and a generated correlation ID.
+
+The native screen uses TanStack Query, zero cache retention after unmount, abortable reads, foreground/pull refresh, confirmation dialogs, retry/error states, and explicit current-device labeling. Revoking the current session clears native credentials. A rejected session returns the user to sign-in. Activity timestamps are approximate because last-used writes remain throttled.
+
+Validation includes account isolation, expiry filtering, individual/all-other/self revocation, concurrent duplicate revocation, transaction rollback, schema validation, safe audit failure, and native transport tests. Physical Android/iOS accessibility and visual verification remains required before declaring native release readiness.

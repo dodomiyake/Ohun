@@ -1,3 +1,4 @@
+import { sessionEventSchema } from './session-event-schema.js';
 import { Schema, model, models, type InferSchemaType, type Model } from 'mongoose';
 
 const id = { type: Schema.Types.ObjectId, required: true, index: true } as const;
@@ -9,8 +10,8 @@ const refreshTokenSchema = new Schema({ sessionId: id, userId: id, familyId: { t
 const verificationChallengeSchema = new Schema({ userId: id, linkHash: { type: String, required: true, unique: true }, codeHash: { type: String, required: true }, codeExpiresAt: { type: Date, required: true }, expiresAt: expires, consumedAt: Date }, { timestamps: true });
 const verificationThrottleSchema = new Schema({ userId: { ...id, unique: true }, failedAttempts: { type: Number, default: 0 }, windowStartedAt: Date, lockedUntil: Date, lastSentAt: Date, sendCount: { type: Number, default: 0 }, sendWindowStartedAt: Date }, { timestamps: true });
 const passwordResetSchema = new Schema({ userId: id, tokenHash: { type: String, required: true, unique: true }, expiresAt: expires, usedAt: Date }, { timestamps: true });
-const securityMetadataKeys = new Set(['sessionId', 'familyId', 'reason', 'requestCorrelationId', 'ipCorrelation']);
-const securityEventSchema = new Schema({ userId: id, type: { type: String, required: true }, metadata: { type: Schema.Types.Mixed, required: true, validate: { validator: (value: unknown) => Boolean(value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).every((key) => securityMetadataKeys.has(key))), message: 'Security event metadata contains an unknown field' } }, occurredAt: { type: Date, default: Date.now, required: true, index: true } });
+const securityMetadataKeys = new Set(['sessionId', 'familyId', 'reason', 'requestCorrelationId', 'ipCorrelation', 'targetSessionId', 'revokedCount']);
+const securityEventSchema = new Schema({ userId: id, type: { type: String, required: true }, metadata: { type: Schema.Types.Mixed, required: true, validate: { validator: function (this: { type: string }, value: unknown) { if (['device_revoked', 'other_devices_revoked'].includes(this.type)) return sessionEventSchema.safeParse({ type: this.type, metadata: value }).success; return Boolean(value && typeof value === 'object' && !Array.isArray(value) && Object.entries(value).every(([key, field]) => securityMetadataKeys.has(key) && (key === 'revokedCount' ? Number.isInteger(field) && Number(field) >= 0 : typeof field === 'string' && field.length <= 200))); }, message: 'Security event metadata contains an unknown field' } }, occurredAt: { type: Date, default: Date.now, required: true, index: true } });
 
 type UserDocument = InferSchemaType<typeof userSchema>;
 type ProfileDocument = InferSchemaType<typeof profileSchema>;

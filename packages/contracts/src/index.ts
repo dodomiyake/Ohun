@@ -35,3 +35,5 @@ export {
   type RefreshRequest,
   type RegisterRequest,
 } from './auth.js';
+
+export { sessionIdSchema, activeSessionSchema, activeSessionsResponseSchema, revokeSessionsResponseSchema, type ActiveSession } from './sessions.js';
