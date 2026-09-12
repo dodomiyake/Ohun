@@ -18,7 +18,8 @@ export default function SettingsScreen() {
     <View style={styles.header}><Text accessibilityRole="header" style={styles.title}>Settings</Text></View>
     <View style={styles.content}>
       <Text style={styles.account}>{auth.user?.username}</Text>
-      <Text style={styles.description}>Manage this device’s Ohun session.</Text>
+      <Text style={styles.description}>Manage your Ohun account and signed-in devices.</Text>
+      <Pressable style={styles.profileButton} onPress={() => router.push('/(app)/devices')} accessibilityRole="button"><Text style={styles.profileButtonText}>Active devices</Text></Pressable>
       <Pressable style={styles.profileButton} onPress={() => router.push('/(app)/profile')} accessibilityRole="button"><Text style={styles.profileButtonText}>Edit profile</Text></Pressable>
       <Pressable style={[styles.button, busy ? styles.disabled : null]} disabled={busy} onPress={() => void signOut()} accessibilityRole="button" accessibilityState={{ busy, disabled: busy }}>
         <Text style={styles.buttonText}>{busy ? 'Signing out…' : 'Sign out'}</Text>

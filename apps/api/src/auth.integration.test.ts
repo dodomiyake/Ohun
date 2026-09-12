@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import request from 'supertest';
 import sharp from 'sharp';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from './app.js';
 import { loadEnv } from './env.js';
 import { MemoryAvatarStorage, MemoryEmailProvider } from './providers.js';
@@ -189,4 +189,82 @@ describe('M2.2 mobile-first authentication', () => {
     expect(stored?.contentType).toBe('image/webp');
     expect(await sharp(stored?.bytes).metadata()).toMatchObject({ width: 512, height: 512, format: 'webp' });
   });
+  async function signedIn(username = 'person', name = 'Phone') {
+    if (!await User.exists({ username })) {
+      await register(`${username}@example.test`, username);
+      await User.updateOne({ username }, { $set: { emailVerifiedAt: new Date() } });
+    }
+    const result = await request(app).post('/api/v1/auth/login').send({ identifier: username, password: 'correct horse battery 🔒', device: { platform: 'native', name } });
+    expect(result.status).toBe(200);
+    const session = await Session.findOne({ userId: result.body.user.id, deviceName: name });
+    return { ...result.body, id: String(session!._id), authorization: `Bearer ${result.body.accessToken}` };
+  }
+
+  it('lists only owned active sessions, marks this device, and omits internal fields', async () => {
+    const current = await signedIn('person', 'Current');
+    const other = await signedIn('person', 'Other');
+    await signedIn('outsider', 'Private phone');
+    await Session.updateOne({ _id: other.id }, { $set: { idleExpiresAt: new Date(0) } });
+    const result = await request(app).get('/api/v1/sessions').set('Authorization', current.authorization);
+    expect(result.status).toBe(200);
+    expect(result.body.sessions).toHaveLength(1);
+    expect(result.body.sessions[0]).toMatchObject({ id: current.id, current: true, deviceName: 'Current' });
+    expect(Object.keys(result.body.sessions[0]).sort()).toEqual(['createdAt', 'current', 'deviceName', 'id', 'lastUsedAt', 'platform']);
+    expect((await request(app).get('/api/v1/sessions')).status).toBe(401);
+    expect((await request(app).get('/api/v1/sessions').set('Authorization', 'Bearer invalid')).status).toBe(401);
+  });
+
+  it('denies cross-account revocation and revokes owned access and refresh credentials', async () => {
+    const current = await signedIn('person', 'Current');
+    const other = await signedIn('person', 'Other');
+    const outsider = await signedIn('outsider', 'Private phone');
+    expect((await request(app).delete(`/api/v1/sessions/${outsider.id}`).set('Authorization', current.authorization)).status).toBe(404);
+    expect((await request(app).delete('/api/v1/sessions/invalid').set('Authorization', current.authorization)).status).toBe(400);
+    const revoked = await request(app).delete(`/api/v1/sessions/${other.id}`).set('Authorization', current.authorization);
+    expect(revoked.body).toEqual({ ok: true, revokedCount: 1 });
+    expect((await request(app).get('/api/v1/auth/me').set('Authorization', other.authorization)).status).toBe(401);
+    expect((await request(app).post('/api/v1/auth/refresh').send({ refreshToken: other.refreshToken })).status).toBe(401);
+    expect((await request(app).get('/api/v1/auth/me').set('Authorization', outsider.authorization)).status).toBe(200);
+    expect((await request(app).delete(`/api/v1/sessions/${other.id}`).set('Authorization', current.authorization)).body.revokedCount).toBe(0);
+    expect(await SecurityEvent.countDocuments({ type: 'device_revoked' })).toBe(1);
+  });
+
+  it('logs out all other devices while preserving the current session and other users', async () => {
+    const current = await signedIn('person', 'Current');
+    await signedIn('person', 'Other');
+    const outsider = await signedIn('outsider', 'Private phone');
+    expect((await request(app).post('/api/v1/sessions/revoke-others').set('Authorization', current.authorization)).body).toEqual({ ok: true, revokedCount: 1 });
+    for (const account of [current, outsider]) {
+      expect((await request(app).post('/api/v1/auth/refresh').send({ refreshToken: account.refreshToken })).status).toBe(200);
+    }
+    expect(await SecurityEvent.countDocuments({ type: 'other_devices_revoked' })).toBe(1);
+  });
+
+  it('rolls back session revocation if refresh-token revocation fails', async () => {
+    const current = await signedIn('person', 'Current');
+    const other = await signedIn('person', 'Other');
+    const update = vi.spyOn(RefreshToken, 'updateMany').mockRejectedValueOnce(new Error('injected failure'));
+    try { expect((await request(app).delete(`/api/v1/sessions/${other.id}`).set('Authorization', current.authorization)).status).toBe(500); }
+    finally { update.mockRestore(); }
+    expect((await Session.findById(other.id))?.revokedAt).toBeFalsy();
+    expect((await request(app).get('/api/v1/auth/me').set('Authorization', other.authorization)).status).toBe(200);
+    expect(await SecurityEvent.countDocuments({ type: 'device_revoked' })).toBe(0);
+  });
+
+  it('supports revoking this device and immediately rejects further authenticated requests', async () => {
+    const current = await signedIn();
+    expect((await request(app).delete(`/api/v1/sessions/${current.id}`).set('Authorization', current.authorization)).body).toEqual({ ok: true, revokedCount: 1 });
+    expect((await request(app).get('/api/v1/sessions').set('Authorization', current.authorization)).status).toBe(401);
+  });
+
+  it('serializes concurrent revocation and leaves no usable refresh credential', async () => {
+    const current = await signedIn('person', 'Current');
+    const other = await signedIn('person', 'Other');
+    const results = await Promise.all([1, 2].map(() => request(app).delete(`/api/v1/sessions/${other.id}`).set('Authorization', current.authorization)));
+    expect(results.map((result) => result.status)).toEqual([200, 200]);
+    expect(results.reduce((sum, result) => sum + result.body.revokedCount, 0)).toBe(1);
+    expect(await RefreshToken.countDocuments({ sessionId: other.id, revokedAt: null })).toBe(0);
+    expect(await SecurityEvent.countDocuments({ type: 'device_revoked' })).toBe(1);
+  });
+
 });
