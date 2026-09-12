@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import type { ApiEnv } from '@ohun/contracts';
 import { healthResponseSchema } from '@ohun/contracts';
+import { createDevInbox } from './dev-inbox.js';
 import { createAuthRouter } from './auth-router.js';
 import { AuthError, createAuthService, type AuthServiceDependencies } from './auth-service.js';
 import { MemoryEmailProvider } from './providers.js';
@@ -39,7 +40,9 @@ export function createApp(env: ApiEnv, dependencies?: AppDependencies) {
     res.status(200).json(payload);
   });
 
-  const auth = createAuthService({ env, email: dependencies?.email ?? new MemoryEmailProvider(), blocklist: dependencies?.blocklist ?? new MemoryPasswordBlocklist(), now: dependencies?.now });
+  const email = dependencies?.email ?? new MemoryEmailProvider();
+  if (email instanceof MemoryEmailProvider) app.use('/dev', createDevInbox(email, { nodeEnv: env.NODE_ENV, enabled: env.DEV_INBOX_ENABLED, secret: env.DEV_INBOX_SECRET, ci: process.env.CI }));
+  const auth = createAuthService({ env, email, blocklist: dependencies?.blocklist ?? new MemoryPasswordBlocklist(), now: dependencies?.now });
   app.use('/api/v1/sessions', createSessionRouter(auth, createSessionService(dependencies?.now)));
   app.use('/api/v1/auth', createAuthRouter(auth));
   app.use('/api/v1/profile', createProfileRouter(auth, createProfileService(dependencies?.avatarStorage ?? new MemoryAvatarStorage())));

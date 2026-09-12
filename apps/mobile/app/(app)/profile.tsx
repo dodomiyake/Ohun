@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { nativeProfileApi } from '../../src/profile/api';
+import { avatarImageSource, nativeProfileApi } from '../../src/profile/api';
 
 export default function ProfileScreen() {
   const auth = useAuth();
@@ -14,7 +14,8 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState(auth.user?.username ?? '');
   const [bio, setBio] = useState('');
   const [status, setStatus] = useState('');
-  const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  const [avatarKey, setAvatarKey] = useState<string | null>(null);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const [profileExists, setProfileExists] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export default function ProfileScreen() {
     let active = true;
     nativeProfileApi.read(token).then((result) => {
       if (!active || !result.profile) return;
+      setAvatarKey(result.profile.avatarKey ?? null); setAvatarFailed(false);
       setProfileExists(true);
       setDisplayName(result.profile.displayName); setUsername(result.user.username); setBio(result.profile.bio); setStatus(result.profile.status);
     }).catch((value) => { if (active) setError(value instanceof Error ? value.message : 'Profile could not be loaded.'); }).finally(() => { if (active) setLoading(false); });
@@ -39,7 +41,7 @@ export default function ProfileScreen() {
     const asset = result.canceled ? undefined : result.assets[0];
     if (!asset || !token || !profileExists) return;
     setBusy(true); setError('');
-    try { await nativeProfileApi.uploadAvatar(token, asset); setAvatarUri(asset.uri); }
+    try { const uploaded = await nativeProfileApi.uploadAvatar(token, asset); setAvatarKey(uploaded.profile?.avatarKey ?? null); setAvatarFailed(false); }
     catch (value) { setError(value instanceof Error ? value.message : 'Avatar could not be uploaded.'); }
     finally { setBusy(false); }
   };
@@ -59,7 +61,7 @@ export default function ProfileScreen() {
     {saved ? <Text style={styles.notice} accessibilityLiveRegion="polite">Profile saved.</Text> : null}
     {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
     <Pressable style={styles.avatarButton} onPress={() => void chooseAvatar()} disabled={busy || !profileExists} accessibilityRole="button" accessibilityLabel="Choose profile photo" accessibilityState={{ disabled: busy || !profileExists }}>
-      {avatarUri ? <Image source={{ uri: avatarUri }} style={styles.avatar} accessibilityLabel="Selected profile photo" /> : <View style={styles.avatarPlaceholder}><Text style={styles.avatarText}>Add photo</Text></View>}
+      {avatarKey && token && !avatarFailed ? <Image source={avatarImageSource(token, avatarKey)} onError={() => { setAvatarFailed(true); setError('Your saved photo could not be loaded. You can choose a replacement.'); }} style={styles.avatar} accessibilityLabel="Your profile photo" /> : <View style={styles.avatarPlaceholder}><Text style={styles.avatarText}>Add photo</Text></View>}
     </Pressable>
     {!profileExists ? <Text style={styles.photoHint}>Save your profile before adding an optional photo.</Text> : null}
     <Text style={styles.label}>Display name</Text><TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} maxLength={80} autoComplete="name" accessibilityLabel="Display name" />

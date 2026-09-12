@@ -12,7 +12,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "validate": "expo config --type public",
-    "build": "npm run typecheck && npm run validate"
+    "build": "npm run typecheck && npm run validate",
+    "validate:bundles": "expo export --platform android --platform ios --output-dir dist/native-validation"
   },
   "dependencies": {
     "@expo-google-fonts/nunito": "^0.4.2",

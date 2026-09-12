@@ -47,6 +47,13 @@ export function createProfileService(storage: AvatarStorageProvider) {
     return read(identity.userId);
   }
 
+  async function readAvatar(userId: string) {
+    const profile = await Profile.findOne({ userId }).select('avatarKey');
+    const avatar = profile?.avatarKey ? await storage.get(profile.avatarKey) : null;
+    if (!avatar) throw new AuthError(404, 'avatar_not_found', 'No profile photo is available.');
+    return avatar;
+  }
+
   async function uploadAvatar(identity: Identity, input: Buffer) {
     const profile = await Profile.findOne({ userId: identity.userId });
     if (!profile) throw new AuthError(409, 'profile_required', 'Create your profile before adding an avatar.');
@@ -65,7 +72,7 @@ export function createProfileService(storage: AvatarStorageProvider) {
     catch { console.error(`[api] security event persistence failed: ${type}`); }
   }
 
-  return { read, update, uploadAvatar };
+  return { read, update, uploadAvatar, readAvatar };
 }
 
 export type ProfileService = ReturnType<typeof createProfileService>;

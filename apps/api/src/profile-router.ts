@@ -13,6 +13,10 @@ const identity = async (request: Request, auth: AuthService) => { const token = 
 export function createProfileRouter(auth: AuthService, profiles: ProfileService) {
   const router = Router();
   router.get('/', asyncRoute(async (request, response) => { response.json(await profiles.read((await identity(request, auth)).userId)); }));
+  router.get('/avatar', asyncRoute(async (request, response) => {
+    const avatar = await profiles.readAvatar((await identity(request, auth)).userId);
+    response.set('Cache-Control', 'private, no-store').type(avatar.contentType).send(Buffer.from(avatar.bytes));
+  }));
   router.put('/', asyncRoute(async (request, response) => { response.json(await profiles.update(await identity(request, auth), profileUpdateRequestSchema.parse(request.body))); }));
   router.post('/avatar', (request, response, next) => { identity(request, auth).then((value) => { response.locals.identity = value; next(); }).catch(next); }, upload.single('avatar'), asyncRoute(async (request, response) => {
     if (!request.file) throw new AuthError(400, 'avatar_invalid', 'Choose a JPEG, PNG, or WebP image up to 5 MB.');
