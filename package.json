@@ -2,7 +2,7 @@
   "name": "ohun",
   "private": true,
   "version": "2.0.0-m1",
-  "description": "Ohun V2 — accessible, secure, private real-time messaging",
+  "description": "Ohun V2 \u2014 accessible, secure, private real-time messaging",
   "workspaces": [
     "apps/*",
     "packages/*",
@@ -20,7 +20,9 @@
     "build:web": "npm run build:packages && npm run build -w @ohun/web",
     "build:api": "npm run build:packages && npm run build -w @ohun/api",
     "validate:mobile": "npm run validate -w @ohun/mobile",
-    "test:e2e": "npm run test:e2e -w @ohun/e2e"
+    "test:e2e": "npm run test:e2e -w @ohun/e2e",
+    "setup:local": "node scripts/setup-local.mjs",
+    "dev:inbox": "node --env-file=apps/api/.env scripts/dev-inbox.mjs"
   },
   "engines": {
     "node": ">=22.13"

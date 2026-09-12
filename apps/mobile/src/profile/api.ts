@@ -20,6 +20,11 @@ async function request(path: string, accessToken: string, init?: RequestInit) {
   catch { throw new ApiError('offline', 'Check your internet connection and try again.'); }
 }
 
+export function avatarImageSource(accessToken: string, version: string) {
+  if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+  return { uri: `${apiBaseUrl}/api/v1/profile/avatar?v=${encodeURIComponent(version)}`, headers: { Authorization: `Bearer ${accessToken}` }, cache: 'reload' as const };
+}
+
 export const nativeProfileApi = {
   async read(accessToken: string) { return parse(await request('/api/v1/profile', accessToken)); },
   async update(accessToken: string, input: ProfileUpdateRequest) {

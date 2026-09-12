@@ -44,6 +44,9 @@ jobs:
       - name: Build API
         run: npm run build:api
 
+      - name: Bundle Android and iOS
+        run: npm run validate:bundles -w @ohun/mobile
+
       - name: Validate Expo config
         run: npm run validate:mobile
 

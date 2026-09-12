@@ -5,6 +5,8 @@ const provider = z.enum(['memory', 'none']).default('memory');
 
 export const apiEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  DEV_INBOX_ENABLED: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  DEV_INBOX_SECRET: z.string().default(''),
   PORT: z.coerce.number().int().positive().default(5000),
   MONGO_URI: z.string().default(''),
   CLIENT_ORIGIN: z.string().url().default('http://localhost:5173'),
