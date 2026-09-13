@@ -1,3 +1,5 @@
+import { createPeopleRouter } from './people-router.js';
+import { createPeopleService } from './people-service.js';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -43,6 +45,7 @@ export function createApp(env: ApiEnv, dependencies?: AppDependencies) {
   const email = dependencies?.email ?? new MemoryEmailProvider();
   if (email instanceof MemoryEmailProvider) app.use('/dev', createDevInbox(email, { nodeEnv: env.NODE_ENV, enabled: env.DEV_INBOX_ENABLED, secret: env.DEV_INBOX_SECRET, ci: process.env.CI }));
   const auth = createAuthService({ env, email, blocklist: dependencies?.blocklist ?? new MemoryPasswordBlocklist(), now: dependencies?.now });
+  app.use(/^\/api\/v1(?=\/(?:people|invitations)(?:\/|$))/, createPeopleRouter(auth, createPeopleService(dependencies?.now)));
   app.use('/api/v1/sessions', createSessionRouter(auth, createSessionService(dependencies?.now)));
   app.use('/api/v1/auth', createAuthRouter(auth));
   app.use('/api/v1/profile', createProfileRouter(auth, createProfileService(dependencies?.avatarStorage ?? new MemoryAvatarStorage())));
