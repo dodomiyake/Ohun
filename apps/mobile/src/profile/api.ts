@@ -32,8 +32,22 @@ export const nativeProfileApi = {
     return parse(await request('/api/v1/profile', accessToken, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }));
   },
   async uploadAvatar(accessToken: string, asset: { uri: string; mimeType?: string | null; fileName?: string | null }) {
+    if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+    const { File } = await import('expo-file-system');
+    const { fetch: uploadFetch } = await import('expo/fetch');
+    const file = new File(asset.uri);
+    if (!file.exists || file.size === 0) throw new ApiError('photo_unavailable', 'This photo could not be read. Choose a photo saved on your device.');
+    if (file.size > 5 * 1024 * 1024) throw new ApiError('photo_too_large', 'Choose a photo smaller than 5 MB.');
+    const mimeType = file.type || asset.mimeType;
+    if (!mimeType || !['image/jpeg', 'image/png', 'image/webp'].includes(mimeType)) throw new ApiError('photo_format', 'Choose a JPEG, PNG, or WebP photo.');
     const form = new FormData();
-    form.append('avatar', { uri: asset.uri, type: asset.mimeType ?? 'image/jpeg', name: asset.fileName ?? 'avatar.jpg' } as unknown as Blob);
-    return parse(await request('/api/v1/profile/avatar', accessToken, { method: 'POST', body: form }));
+    form.append('avatar', file);
+    let response: Response;
+    try {
+      response = await uploadFetch(`${apiBaseUrl}/api/v1/profile/avatar`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form });
+    } catch {
+      throw new ApiError('upload_failed', 'The photo could not be sent. Try a smaller photo saved on this device, and check that Ohun can reach the server.');
+    }
+    return parse(response);
   },
 };

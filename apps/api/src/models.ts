@@ -1,5 +1,7 @@
 import { sessionEventSchema } from './session-event-schema.js';
-import { Schema, model, models, type InferSchemaType, type Model } from 'mongoose';
+import mongoose, { type InferSchemaType, type Model } from 'mongoose';
+
+const { Schema, model, models } = mongoose;
 
 const id = { type: Schema.Types.ObjectId, required: true, index: true } as const;
 const expires = { type: Date, required: true, index: { expireAfterSeconds: 0 } } as const;
