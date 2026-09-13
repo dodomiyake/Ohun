@@ -1,19 +1,13 @@
 import { afterEach, expect, it, vi } from 'vitest';
 afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
-it('loads saved avatars with bearer authentication without putting tokens in the URL', async () => {
-  vi.stubEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.example.test');
-  const { avatarImageSource } = await import('./api');
-  const source = avatarImageSource('private-access-token', 'avatars/user/photo.webp');
-  expect(source.headers.Authorization).toBe('Bearer private-access-token');
-  expect(source.uri).not.toContain('private-access-token');
-  expect(source.uri).toContain('/api/v1/profile/avatar?v=');
-  expect(source.cache).toBe('reload');
-});
 
-const upload = vi.hoisted(() => ({ fetch: vi.fn(), exists: true, size: 100 }));
+const upload = vi.hoisted(() => ({ fetch: vi.fn(), exists: true, size: 100, write: vi.fn(), remove: vi.fn() }));
 vi.mock('expo/fetch', () => ({ fetch: upload.fetch }));
-vi.mock('expo-file-system', () => ({ File: class extends Blob {
+vi.mock('expo-file-system', () => ({ Paths: { cache: 'file:///cache' }, File: class extends Blob {
   constructor() { super(['photo'], { type: 'image/jpeg' }); }
+  uri = 'file:///cache/photo.webp';
+  write(bytes: Uint8Array) { upload.write(bytes); }
+  delete() { upload.remove(); }
   get exists() { return upload.exists; }
   get size() { return upload.size; }
 } }));
@@ -38,4 +32,23 @@ it('rejects missing and oversized photos before transport', async () => {
   await expect(nativeProfileApi.uploadAvatar('access', { uri: 'file:///large.jpg' })).rejects.toMatchObject({ code: 'photo_too_large' });
   expect(upload.fetch).not.toHaveBeenCalled();
   upload.size = 100;
+});
+
+it('downloads authenticated bytes to a disposable local image file', async () => {
+  vi.stubEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.example.test');
+  upload.exists = true; upload.size = 100;
+  upload.fetch.mockResolvedValueOnce(new Response(new Uint8Array([1, 2]), { headers: { 'Content-Type': 'image/webp' } }));
+  const { downloadAvatar } = await import('./api');
+  const image = await downloadAvatar('private-token');
+  expect(upload.fetch).toHaveBeenLastCalledWith('https://api.example.test/api/v1/profile/avatar', expect.objectContaining({ headers: { Authorization: 'Bearer private-token' } }));
+  expect(image.uri).toMatch(/^file:/); expect(image.uri).not.toContain('private-token');
+  expect(upload.write).toHaveBeenCalledWith(new Uint8Array([1, 2]));
+  image.dispose(); expect(upload.remove).toHaveBeenCalled();
+});
+it('reports missing server photos distinctly without creating a cached file', async () => {
+  vi.stubEnv('EXPO_PUBLIC_API_BASE_URL', 'https://api.example.test');
+  upload.write.mockClear(); upload.fetch.mockResolvedValueOnce(new Response('', { status: 404 }));
+  const { downloadAvatar } = await import('./api');
+  await expect(downloadAvatar('token')).rejects.toMatchObject({ code: 'photo_missing', status: 404 });
+  expect(upload.write).not.toHaveBeenCalled();
 });
