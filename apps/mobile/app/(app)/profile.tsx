@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../src/auth/AuthProvider';
-import { avatarImageSource, nativeProfileApi } from '../../src/profile/api';
+import { downloadAvatar, nativeProfileApi } from '../../src/profile/api';
 
 export default function ProfileScreen() {
   const auth = useAuth();
@@ -15,6 +15,7 @@ export default function ProfileScreen() {
   const [bio, setBio] = useState('');
   const [status, setStatus] = useState('');
   const [avatarKey, setAvatarKey] = useState<string | null>(null);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [avatarFailed, setAvatarFailed] = useState(false);
   const [profileExists, setProfileExists] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -33,6 +34,22 @@ export default function ProfileScreen() {
     }).catch((value) => { if (active) setError(value instanceof Error ? value.message : 'Profile could not be loaded.'); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [token]);
+
+  useEffect(() => {
+    setAvatarUri(null);
+    if (!token || !avatarKey) return;
+    let active = true;
+    let dispose: (() => void) | undefined;
+    const controller = new AbortController();
+    void downloadAvatar(token, controller.signal).then((photo) => {
+      if (!active) { photo.dispose(); return; }
+      dispose = photo.dispose;
+      setAvatarFailed(false); setAvatarUri(photo.uri);
+    }).catch((value) => {
+      if (active) setError(value instanceof Error ? value.message : 'Your photo could not be loaded.');
+    });
+    return () => { active = false; controller.abort(); dispose?.(); };
+  }, [token, avatarKey]);
 
   const chooseAvatar = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -61,7 +78,7 @@ export default function ProfileScreen() {
     {saved ? <Text style={styles.notice} accessibilityLiveRegion="polite">Profile saved.</Text> : null}
     {error ? <Text style={styles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
     <Pressable style={styles.avatarButton} onPress={() => void chooseAvatar()} disabled={busy || !profileExists} accessibilityRole="button" accessibilityLabel="Choose profile photo" accessibilityState={{ disabled: busy || !profileExists }}>
-      {avatarKey && token && !avatarFailed ? <Image source={avatarImageSource(token, avatarKey)} onError={() => { setAvatarFailed(true); setError('Your saved photo could not be loaded. You can choose a replacement.'); }} style={styles.avatar} accessibilityLabel="Your profile photo" /> : <View style={styles.avatarPlaceholder}><Text style={styles.avatarText}>Add photo</Text></View>}
+      {avatarUri && !avatarFailed ? <Image source={{ uri: avatarUri }} onError={() => { setAvatarFailed(true); setError('Your photo downloaded, but this device could not display it. Try a different photo.'); }} style={styles.avatar} accessibilityLabel="Your profile photo" /> : <View style={styles.avatarPlaceholder}><Text style={styles.avatarText}>Add photo</Text></View>}
     </Pressable>
     {!profileExists ? <Text style={styles.photoHint}>Save your profile before adding an optional photo.</Text> : null}
     <Text style={styles.label}>Display name</Text><TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} maxLength={80} autoComplete="name" accessibilityLabel="Display name" />
