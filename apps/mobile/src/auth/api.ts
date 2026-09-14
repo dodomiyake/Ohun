@@ -14,13 +14,28 @@ const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, '');
 
 async function post(path: string, body: unknown) {
   if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
   let response: Response;
+  let payload: unknown;
   try {
-    response = await fetch(`${apiBaseUrl}${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-  } catch {
+    const operation = async () => {
+      const result = await fetch(`${apiBaseUrl}${path}`, { method: 'POST', signal: controller.signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data: unknown = await result.json().catch(() => null);
+      return { response: result, payload: data };
+    };
+    const timeout = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        reject(new ApiError('timeout', path.endsWith('/register') ? 'Ohun did not respond in time. Your account may have been created. Check email verification before trying again.' : 'Ohun did not respond in time. Check your connection and try again.'));
+        controller.abort();
+      }, 15_000);
+    });
+    ({ response, payload } = await Promise.race([operation(), timeout]));
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
     throw new ApiError('offline', 'Check your internet connection and try again.');
-  }
-  const payload: unknown = await response.json().catch(() => null);
+  } finally { clearTimeout(timer); }
+
   if (!response.ok) {
     const error = payload && typeof payload === 'object' && 'error' in payload ? payload.error : null;
     const code = error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? error.code : 'request_failed';
