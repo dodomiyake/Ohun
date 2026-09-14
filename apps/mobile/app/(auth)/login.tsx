@@ -1,7 +1,7 @@
 import { PasswordField } from '../../src/components/auth/PasswordField';
 import { Link, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Platform, Pressable, Text, TextInput } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, TextInput } from 'react-native';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { ApiError } from '../../src/auth/api';
 import { AuthFrame, authStyles } from '../../src/components/auth/AuthFrame';
@@ -20,7 +20,7 @@ export default function LoginScreen() {
     {error ? <Text style={authStyles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
     <Text style={authStyles.label}>Email or username</Text><TextInput style={authStyles.input} value={identifier} onChangeText={setIdentifier} autoCapitalize="none" autoCorrect={false} autoComplete="username" placeholder="name@example.com" accessibilityLabel="Email or username" returnKeyType="next" />
     <Text style={authStyles.label}>Password</Text><PasswordField value={password} onChangeText={setPassword} autoComplete="current-password" placeholder="Enter your password" accessibilityLabel="Password" onSubmitEditing={() => void submit()} />
-    <Link href="/(auth)/forgot-password" asChild><Pressable style={[authStyles.link, { alignItems: 'flex-end' }]} accessibilityRole="link"><Text style={authStyles.linkText}>Forgot password?</Text></Pressable></Link>
+    <Link href="/(auth)/forgot-password" asChild><Pressable style={StyleSheet.flatten([authStyles.link, { alignItems: 'flex-end' }])} accessibilityRole="link"><Text style={authStyles.linkText}>Forgot password?</Text></Pressable></Link>
     <Pressable style={[authStyles.button, busy ? authStyles.buttonDisabled : null]} onPress={() => void submit()} disabled={busy || !identifier || !password} accessibilityRole="button" accessibilityState={{ disabled: busy || !identifier || !password, busy }}><Text style={authStyles.buttonText}>{busy ? 'Signing in…' : 'Sign in'}</Text></Pressable>
     <Link href="/(auth)/register" asChild><Pressable style={authStyles.link} accessibilityRole="link"><Text style={authStyles.linkText}>New to Ohun? Create an account</Text></Pressable></Link>
   </AuthFrame>;
