@@ -69,11 +69,11 @@ export default function ProfileScreen() {
   };
 
   const save = async () => {
-    if (!token) return;
-    setBusy(true); setError('');
-    try { const result = await nativeProfileApi.update(token, { displayName, username, bio, status }); auth.updateUser(result.user); setProfileExists(true);
+    if (!token || busy) return;
+    setBusy(true); setSaved(false); setError('');
+    try { const result = await nativeProfileApi.update(token, { displayName, username, bio, status }); setProfileExists(true);
       if (pendingPhoto) { const uploaded = await nativeProfileApi.uploadAvatar(token, pendingPhoto); setAvatarKey(uploaded.profile?.avatarKey ?? null); setPendingPhoto(null); }
-      setSaved(true); }
+      auth.updateUser(result.user); setSaved(true); }
     catch (value) { setError(value instanceof Error ? value.message : 'Profile could not be saved.'); }
     finally { setBusy(false); }
   };
@@ -94,7 +94,7 @@ export default function ProfileScreen() {
     <Text style={styles.label}>About you</Text><TextInput style={[styles.input, styles.bio]} value={bio} onChangeText={setBio} maxLength={500} multiline textAlignVertical="top" placeholder="Tell people a little about yourself" accessibilityLabel="Bio" />
     <Pressable style={[styles.save, busy ? styles.disabled : null]} onPress={() => void save()} disabled={busy || !displayName.trim() || username.length < 3} accessibilityRole="button" accessibilityState={{ busy, disabled: busy || !displayName.trim() || username.length < 3 }}><Text style={styles.saveText}>{busy ? 'Saving…' : 'Save profile'}</Text></Pressable>
     {!profileExists ? <Text style={styles.photoHint}>Your username was created during registration and can be changed later in profile settings.</Text> : null}
-    {profileExists ? <Pressable style={styles.continueButton} onPress={() => router.replace('/(app)')} accessibilityRole="button"><Text style={styles.continueText}>Continue to chats</Text></Pressable> : null}
+    {profileExists && !busy && !pendingPhoto ? <Pressable style={styles.continueButton} onPress={() => router.replace('/(app)')} accessibilityRole="button"><Text style={styles.continueText}>Continue to chats</Text></Pressable> : null}
   </ScrollView></SafeAreaView>;
 }
 

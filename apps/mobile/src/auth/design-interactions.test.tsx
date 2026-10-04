@@ -53,4 +53,20 @@ describe('revised mobile interactions', () => {
     expect(api.update).toHaveBeenCalled(); expect(api.uploadAvatar).toHaveBeenCalledWith('test', { uri: 'file:///chosen.png' });
     expect(api.update.mock.invocationCallOrder[0]).toBeLessThan(api.uploadAvatar.mock.invocationCallOrder[0]!);
   });
+  it('keeps navigation unavailable until the staged photo finishes uploading', async () => {
+    let finishUpload!: (value: unknown) => void;
+    api.read.mockResolvedValue({ profile: null });
+    api.picker.mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///chosen.png' }] });
+    api.update.mockResolvedValue({ user: { username: 'adeola' } });
+    api.uploadAvatar.mockReturnValue(new Promise(resolve => { finishUpload = resolve; }));
+    await mount(<ProfileScreen />); await click('Choose profile photo');
+    await input('Display name', 'Adeola'); await click('Save profile');
+    expect(host.textContent).toContain('Saving…');
+    expect(host.textContent).not.toContain('Continue to chats');
+    expect(host.textContent).not.toContain('Profile saved.');
+    await act(async () => { finishUpload({ profile: { avatarKey: 'new' } }); });
+    expect(host.textContent).toContain('Profile saved.');
+    expect(host.textContent).toContain('Continue to chats');
+  });
+
 });
