@@ -21,6 +21,8 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
   const [username, setUsername] = useState(''); const [results, setResults] = useState<PublicPerson[] | null>(null);
   const searchUsername = username.trim().replace(/^@/, '');
   const validUsername = usernameSearchSchema.safeParse({ username: searchUsername }).success;
+  const [sendingId, setSendingId] = useState<string | null>(null);
+  const [inviteFeedback, setInviteFeedback] = useState<{ id: string; text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   const preferences = useQuery({ queryKey: [...key, 'preferences'], queryFn: () => peopleApi.preferences(token), enabled: Boolean(token), retry: false, gcTime: 0 });
   const contacts = useInfiniteQuery({ queryKey: [...key, 'contacts'], queryFn: ({ pageParam }) => peopleApi.contacts(token, pageParam), initialPageParam: undefined as string | undefined, getNextPageParam: page => page.nextCursor ?? undefined, enabled: Boolean(token), retry: false, gcTime: 0 });
@@ -33,6 +35,18 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
     try { await operation(); setMessage(success); await client.invalidateQueries({ queryKey: key }); }
     catch (e) { if (e instanceof ApiError && e.status === 401) await auth.signOutLocal(); else setMessage(e instanceof Error ? e.message : 'Please try again.'); }
     finally { setBusy(false); }
+  }
+  async function sendRequest(id: string) {
+    if (busy) return;
+    setBusy(true); setSendingId(id); setInviteFeedback(null);
+    try {
+      await peopleApi.invite(token, id);
+      setInviteFeedback({ id, text: 'Request submitted. Open Contact requests to check its status.', error: false });
+      await client.invalidateQueries({ queryKey: key });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) await auth.signOutLocal();
+      else setInviteFeedback({ id, text: e instanceof Error ? e.message : 'Could not send the request. Please try again.', error: true });
+    } finally { setSendingId(null); setBusy(false); }
   }
   const allContacts = contacts.data?.pages.flatMap(page => page.people) ?? [];
   const allInvitations = invitations.data?.pages.flatMap(page => page.invitations) ?? [];
@@ -50,9 +64,9 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
         <View style={s.card}><View style={s.person}><View style={s.identity}><Text style={s.name}>Let people find me by username</Text><Text style={s.caption}>Share @{auth.user?.username} with someone you know.</Text></View><Switch accessibilityLabel="Let people find me by username" value={preferences.data?.byUsername ?? false} disabled={busy || !preferences.data} onValueChange={value => void perform(() => peopleApi.setPreferences(token, value))} /></View></View>
         <TextInput accessibilityLabel="Exact username" placeholder="Username or @username" autoCapitalize="none" autoCorrect={false} value={username} editable={!busy} onChangeText={value => { setUsername(value); setResults(null); }} style={s.input} maxLength={33} />
         {username.length > 0 && !validUsername ? <Text accessibilityLiveRegion="polite" style={s.caption}>Use 3–32 letters, numbers, dots, underscores or hyphens. A leading @ is optional.</Text> : null}
-        <Button title={busy ? 'Please wait…' : 'Search'} disabled={busy || !validUsername} onPress={() => void perform(async () => { const response = await peopleApi.search(token, searchUsername); setResults(response.people); })} />
+        <Button title={busy && !sendingId ? 'Please wait…' : 'Search'} disabled={busy || !validUsername} onPress={() => void perform(async () => { const response = await peopleApi.search(token, searchUsername); setResults(response.people); })} />
         {results?.length === 0 && <Text style={s.caption}>No match. Check the exact username and ask them to enable username discovery.</Text>}
-        {results?.map(person => <View key={person.id} style={s.card}><Person person={person} />{allContacts.some(p => p.id === person.id) ? <Text style={s.caption}>Already in your contacts</Text> : allInvitations.some(i => i.person.id === person.id) ? <Text style={s.caption}>Request pending — open Requests to review it.</Text> : <Button title="Send request" disabled={busy || Boolean(error) || loading} onPress={() => void perform(() => peopleApi.invite(token, person.id), 'Request submitted. Check Requests for its status.')} />}</View>)}
+        {results?.map(person => <View key={person.id} style={s.card}><Person person={person} />{allContacts.some(p => p.id === person.id) ? <Text style={s.caption}>Already in your contacts</Text> : allInvitations.some(i => i.person.id === person.id) ? <Text style={s.caption}>Request pending — open Requests to review it.</Text> : <Button title={sendingId === person.id ? 'Sending request…' : 'Send request'} disabled={busy || Boolean(error) || loading} onPress={() => void sendRequest(person.id)} />}{inviteFeedback?.id === person.id && <Text accessibilityRole={inviteFeedback.error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={inviteFeedback.error ? s.error : s.caption}>{inviteFeedback.text}</Text>}</View>)}
         <Text accessibilityRole="header" style={s.section}>Your contacts</Text>
         {!loading && !error && !allContacts.length && <Text style={s.caption}>No contacts yet. Find someone and send a request.</Text>}
         {allContacts.map(person => <View key={person.id} style={s.card}><Person person={person} /></View>)}

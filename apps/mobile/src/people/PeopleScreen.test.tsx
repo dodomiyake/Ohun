@@ -52,3 +52,20 @@ it('renders request errors with retry instead of an empty success state', async 
   expect(host.textContent).toContain('Connection unavailable'); expect(host.textContent).not.toContain('No incoming requests');
   api.invitations.mockResolvedValue({ invitations: [], nextCursor: null }); await click('Retry'); expect(host.textContent).toContain('No incoming requests');
 });
+it('shows sending and failure next to the recipient and allows a retry', async () => {
+  let rejectInvite!: (error: Error) => void;
+  api.invite.mockImplementationOnce(() => new Promise((_resolve, reject) => { rejectInvite = reject; }));
+  api.search.mockResolvedValue({ people: [person], nextCursor: null });
+  await mount();
+  const input = host.querySelector('input:not([type=checkbox])') as HTMLInputElement;
+  await act(async () => { input.value = 'bobby'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await click('Search'); await click('Send request');
+  const sending = [...host.querySelectorAll('button')].find(b => b.textContent === 'Sending request…');
+  expect(sending?.disabled).toBe(true);
+  await act(async () => rejectInvite(new Error('Ohun did not respond. Please try again.'))); await settle();
+  const send = [...host.querySelectorAll('button')].find(b => b.textContent === 'Send request')!;
+  expect(send.disabled).toBe(false);
+  expect(send.parentElement?.textContent).toContain('Ohun did not respond. Please try again.');
+  await click('Send request');
+  expect(send.parentElement?.textContent).toContain('Request submitted. Open Contact requests to check its status.');
+});
