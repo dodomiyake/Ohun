@@ -19,6 +19,8 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
   const auth = useAuth(); const token = auth.accessToken!; const client = useQueryClient();
   const key = ['people', auth.user?.id];
   const [username, setUsername] = useState(''); const [results, setResults] = useState<PublicPerson[] | null>(null);
+  const searchUsername = username.trim().replace(/^@/, '');
+  const validUsername = usernameSearchSchema.safeParse({ username: searchUsername }).success;
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   const preferences = useQuery({ queryKey: [...key, 'preferences'], queryFn: () => peopleApi.preferences(token), enabled: Boolean(token), retry: false, gcTime: 0 });
   const contacts = useInfiniteQuery({ queryKey: [...key, 'contacts'], queryFn: ({ pageParam }) => peopleApi.contacts(token, pageParam), initialPageParam: undefined as string | undefined, getNextPageParam: page => page.nextCursor ?? undefined, enabled: Boolean(token), retry: false, gcTime: 0 });
@@ -46,8 +48,9 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
       {!requests && <>
         <Button title="Contact requests" onPress={() => router.replace('/(app)/requests')} />
         <View style={s.card}><View style={s.person}><View style={s.identity}><Text style={s.name}>Let people find me by username</Text><Text style={s.caption}>Share @{auth.user?.username} with someone you know.</Text></View><Switch accessibilityLabel="Let people find me by username" value={preferences.data?.byUsername ?? false} disabled={busy || !preferences.data} onValueChange={value => void perform(() => peopleApi.setPreferences(token, value))} /></View></View>
-        <TextInput accessibilityLabel="Exact username" placeholder="Enter username" autoCapitalize="none" autoCorrect={false} value={username} editable={!busy} onChangeText={value => { setUsername(value); setResults(null); }} style={s.input} maxLength={32} />
-        <Button title={busy ? 'Please wait…' : 'Search'} disabled={busy || !usernameSearchSchema.safeParse({ username }).success} onPress={() => void perform(async () => { const response = await peopleApi.search(token, username.trim()); setResults(response.people); })} />
+        <TextInput accessibilityLabel="Exact username" placeholder="Username or @username" autoCapitalize="none" autoCorrect={false} value={username} editable={!busy} onChangeText={value => { setUsername(value); setResults(null); }} style={s.input} maxLength={33} />
+        {username.length > 0 && !validUsername ? <Text accessibilityLiveRegion="polite" style={s.caption}>Use 3–32 letters, numbers, dots, underscores or hyphens. A leading @ is optional.</Text> : null}
+        <Button title={busy ? 'Please wait…' : 'Search'} disabled={busy || !validUsername} onPress={() => void perform(async () => { const response = await peopleApi.search(token, searchUsername); setResults(response.people); })} />
         {results?.length === 0 && <Text style={s.caption}>No match. Check the exact username and ask them to enable username discovery.</Text>}
         {results?.map(person => <View key={person.id} style={s.card}><Person person={person} />{allContacts.some(p => p.id === person.id) ? <Text style={s.caption}>Already in your contacts</Text> : allInvitations.some(i => i.person.id === person.id) ? <Text style={s.caption}>Request pending — open Requests to review it.</Text> : <Button title="Send request" disabled={busy || Boolean(error) || loading} onPress={() => void perform(() => peopleApi.invite(token, person.id), 'Request submitted. Check Requests for its status.')} />}</View>)}
         <Text accessibilityRole="header" style={s.section}>Your contacts</Text>

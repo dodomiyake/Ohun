@@ -31,13 +31,13 @@ async function mount(requests = false) {
   await act(async () => root.render(<QueryClientProvider client={client}><PeopleScreen requests={requests} /></QueryClientProvider>)); await settle();
 }
 async function click(label: string) { const button = [...host.querySelectorAll('button')].find(b => b.textContent === label); expect(button).toBeDefined(); await act(async () => button!.click()); await settle(); }
-it('keeps discovery off until the user opts in and searches by typed username', async () => {
+it.each(['bobby', '@bobby', ' @bobby '])('searches %s with discovery off until opt-in', async (typedUsername) => {
   api.search.mockResolvedValue({ people: [person], nextCursor: null }); await mount();
   expect((host.querySelector('[type=checkbox]') as HTMLInputElement).checked).toBe(false);
   await act(async () => (host.querySelector('[type=checkbox]') as HTMLInputElement).click());
   expect(api.setPreferences).toHaveBeenCalledWith('test', true);
   const input = host.querySelector('input:not([type=checkbox])') as HTMLInputElement;
-  await act(async () => { input.value = 'bobby'; input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await act(async () => { input.value = typedUsername; input.dispatchEvent(new Event('input', { bubbles: true })); });
   await click('Search'); expect(api.search).toHaveBeenCalledWith('test', 'bobby'); expect(host.textContent).toContain('@bobby');
   await click('Send request'); expect(api.invite).toHaveBeenCalledWith('test', person.id);
 });
