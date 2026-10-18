@@ -5,6 +5,7 @@ import { useFonts } from 'expo-font';
 import { useQuery } from '@tanstack/react-query';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppNav } from '../../src/shells/AppNav';
 import { useAuth } from '../../src/auth/AuthProvider';
 import { downloadAvatar, nativeProfileApi } from '../../src/profile/api';
 const glyphs = { person: '\ue7fd', lock: '\ue897', notifications: '\ue7f4', palette: '\ue40a', devices: '\ue1b1', help: '\ue887', chevron: '\ue5cc', logout: '\ue9ba', chat: '\ue0b7', group: '\ue7ef', settings: '\ue8b8' };
@@ -56,11 +57,7 @@ export default function SettingsScreen() {
       <Pressable style={styles.logout} disabled={busy} onPress={() => void signOut()} accessibilityRole="button" accessibilityState={{ busy, disabled: busy }}><Text style={styles.logoutText}>{busy ? 'Signing out…' : 'Sign out'}</Text>{ready ? <Text style={[styles.icon, { color: colors.error }]} accessible={false}>{glyphs.logout}</Text> : null}</Pressable>
       <Text style={styles.footer}>Ohun</Text>
     </ScrollView>
-    <View style={styles.nav} accessibilityRole="tablist">
-      <Pressable style={styles.tab} accessibilityRole="tab" accessibilityState={{ selected: false }} onPress={() => router.replace('/(app)')}><>{ready ? <Text style={styles.icon} accessible={false}>{glyphs.chat}</Text> : null}<Text style={styles.caption}>Chats</Text></></Pressable>
-      <View style={styles.tab} accessibilityLabel="People, coming soon"><>{ready ? <Text style={styles.icon} accessible={false}>{glyphs.group}</Text> : null}<Text style={styles.caption}>People · Soon</Text></></View>
-      <View style={[styles.tab, styles.activeTab]} accessibilityRole="tab" accessibilityState={{ selected: true }}><>{ready ? <Text style={[styles.icon, { color: colors.onPrimary }]} accessible={false}>{glyphs.settings}</Text> : null}<Text style={styles.activeText}>Settings</Text></></View>
-    </View>
+    <AppNav active="Settings" />
   </SafeAreaView>;
 }
 const styles = StyleSheet.create({
