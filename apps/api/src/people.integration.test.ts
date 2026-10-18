@@ -66,6 +66,24 @@ describe('private people transactions', () => {
     expect((await Invitation.findById(id))?.state).toBe('ignored');
     await service.action(a, id, { action: 'cancel' });
   });
+  it('allows a fresh request after the sender cancels, including reversed direction', async () => {
+    const oldId = await invite();
+    await service.action(a, oldId, { action: 'cancel' });
+    await service.invite(a, { recipientId: b });
+    const sent = (await service.list(a, 'invitations')).invitations!;
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ direction: 'outgoing', state: 'pending' });
+    expect(sent[0].id).not.toBe(oldId);
+    await expect(service.action(b, oldId, { action: 'accept' })).rejects.toMatchObject({ status: 404 });
+    await service.action(a, sent[0].id, { action: 'cancel' });
+    await service.setPreferences(a, { byUsername: true });
+    await service.invite(b, { recipientId: a });
+    const incoming = (await service.list(a, 'invitations')).invitations!;
+    expect(incoming).toHaveLength(1);
+    expect(incoming[0]).toMatchObject({ direction: 'incoming', state: 'pending' });
+    await service.action(a, incoming[0].id, { action: 'accept' });
+    expect((await service.list(a, 'people')).people).toHaveLength(1);
+  });
   it('enforces expiry without deleting the record', async () => {
     const id = await invite(); await Invitation.updateOne({ _id: id }, { $set: { expiresAt: new Date(0) } });
     await expect(service.action(b, id, { action: 'accept' })).rejects.toMatchObject({ status: 404 });
