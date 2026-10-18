@@ -65,6 +65,9 @@ describe('private people transactions', () => {
     await service.invite(a, { recipientId: b });
     expect((await Invitation.findById(id))?.state).toBe('ignored');
     await service.action(a, id, { action: 'cancel' });
+    await service.invite(a, { recipientId: b });
+    expect((await service.list(b, 'invitations')).invitations).toHaveLength(0);
+    expect(await Invitation.countDocuments()).toBe(1);
   });
   it('allows a fresh request after the sender cancels, including reversed direction', async () => {
     const oldId = await invite();

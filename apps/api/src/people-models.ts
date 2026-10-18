@@ -10,6 +10,8 @@ const invitationSchema = new Schema({
   state: { type: String, enum: ['pending', 'accepted', 'ignored', 'cancelled'], default: 'pending', required: true },
   expiresAt: { type: Date, required: true },
   resolvedAt: Date,
+  // Private suppression survives cancellation of an ignored invitation.
+  resendBlocked: { type: Boolean, default: false },
 }, { timestamps: true, strict: 'throw' });
 // Keep ignored records to prevent repeat invitations. Expiry is checked by the service, not TTL.
 invitationSchema.index({ recipientId: 1, state: 1, _id: 1 });

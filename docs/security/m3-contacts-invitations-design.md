@@ -59,3 +59,10 @@ Authenticated routes above are now implemented, plus POST `/api/v1/people/:id/bl
 Limits: 120 requests/minute/IP, 60/minute/account, search 10/minute/account, invitations 10/hour/account. These are process-local development limits; production distributed limiting is outstanding. Lists use ObjectId keyset pages of 50. Outgoing ignored records serialize as pending; there is no read signal. Exact username discovery follows the existing NFKC identity normalization.
 
 Eight replica-set tests cover privacy, ownership, crossed invitations, concurrent acceptance, rollback, ignored-state suppression, expiry and block/accept concurrency. Local MongoDB startup currently exits with code 100, so live transaction validation remains pending on the CI replica set. Unit/HTTP tests do not substitute for these checks. Native UI, block management/unblock, links/QR and address-book matching remain later work; this API checkpoint is not production-ready.
+
+
+### Cancelled-request retry correction
+
+A cancelled, non-suppressed invitation may be replaced by a fresh invitation inside the existing participant-lock transaction, subject to discovery, block, connection and rate-limit checks. A new ID prevents stale actions from accepting a replacement request. Pending, accepted, expired pending and ignored records continue to prevent repeat requests. Ignoring now records private `resendBlocked` suppression; cancelling an ignored record also sets it, including legacy ignored records.
+
+Legacy cancelled records did not retain whether they were previously ignored. They are eligible for retry in this development database; that lost history cannot be reconstructed. Before any production rollout with legacy data, conservatively mark ambiguous cancelled records suppressed or perform an explicit migration review.

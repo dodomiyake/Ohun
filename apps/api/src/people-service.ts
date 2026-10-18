@@ -47,7 +47,13 @@ export function createPeopleService(now = () => new Date()) {
           await lock([actor, recipientId], session);
           const pairKey = personPairKey(actor, recipientId);
           if (await blocked(pairKey, session) || !await person(actor, session) || !await person(recipientId, session) || !await DiscoveryPreferences.findOne({ userId: recipientId, byUsername: true }).session(session)) return;
-          if (await Invitation.findOne({ pairKey }).session(session) || await Connection.findOne({ pairKey }).session(session)) return;
+          if (await Connection.findOne({ pairKey }).session(session)) return;
+          const previous = await Invitation.findOne({ pairKey }).session(session);
+          if (previous) {
+            if (previous.state !== 'cancelled' || previous.resendBlocked) return;
+            // Replace in the transaction: stale actions must not address the new request.
+            await Invitation.deleteOne({ _id: previous._id, state: 'cancelled', resendBlocked: { $ne: true } }, { session });
+          }
           await Invitation.create([{ pairKey, senderId: actor, recipientId, state: 'pending', expiresAt: new Date(now().getTime() + INVITATION_LIFETIME_MS) }], { session });
         });
       } catch (error) { if (!(error instanceof AuthError && error.status === 404)) throw error; }
@@ -65,7 +71,7 @@ export function createPeopleService(now = () => new Date()) {
         const timestamp = now();
         const state = action === 'accept' ? 'accepted' : action === 'ignore' ? 'ignored' : 'cancelled';
         // Ignore stays indistinguishable from pending for the sender, including cancellation.
-        const result = await Invitation.updateOne({ _id: id, [action === 'cancel' ? 'senderId' : 'recipientId']: actor, state: action === 'cancel' ? { $in: ['pending', 'ignored'] } : 'pending', expiresAt: { $gt: timestamp } }, { $set: { state, resolvedAt: timestamp } }, { session });
+        const result = await Invitation.updateOne({ _id: id, [action === 'cancel' ? 'senderId' : 'recipientId']: actor, state: action === 'cancel' ? { $in: ['pending', 'ignored'] } : 'pending', expiresAt: { $gt: timestamp } }, { $set: { state, resolvedAt: timestamp, ...(action === 'ignore' || invitation.state === 'ignored' ? { resendBlocked: true } : {}) } }, { session });
         if (!result.modifiedCount) throw unavailable();
         if (action === 'accept') {
           const [firstUserId, secondUserId] = [sender, recipient].sort();

@@ -9,7 +9,7 @@ This branch combines the existing auth/settings alignment and contacts API with 
 3. Search the other account's exact username, then Send request.
 4. On the recipient device, open People → Contact requests. Accept the incoming request.
 5. Return to People on both devices. The other account should appear under Your contacts.
-6. Test Ignore and Cancel with separate account pairs; ignored requests remain pending to the sender by design. Existing invitation records prevent repeated invitations.
+6. Test Ignore and Cancel with separate account pairs; ignored requests remain pending to the sender by design. After cancelling a pending request, send it again and confirm it appears on both accounts. Ignored requests remain suppressed after cancellation.
 
 Lists refresh when entering the screen. Requests are not pushed in real time. Pagination is available for contacts and requests. Search requires a full username, not a display name. Discovery is opt-in and private by default.
 
