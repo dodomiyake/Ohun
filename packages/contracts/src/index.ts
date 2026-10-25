@@ -38,3 +38,4 @@ export {
 
 export { sessionIdSchema, activeSessionSchema, activeSessionsResponseSchema, revokeSessionsResponseSchema, type ActiveSession } from './sessions.js';
 export { personIdSchema, publicPersonSchema, usernameSearchSchema, discoveryPreferencesSchema, invitationRequestSchema, invitationActionSchema, invitationStateSchema, invitationSchema, peopleResponseSchema, invitationsResponseSchema, type InvitationState, type InvitationAction, type PublicPerson } from './people.js';
+export * from './messaging.js';
