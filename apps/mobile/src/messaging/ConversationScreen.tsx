@@ -59,26 +59,36 @@ export function ConversationScreen() {
       return;
     }
 
-    // Wait for native layout; content-size changes below provide the primary
-    // scroll, while these frames cover an already-rendered cached list.
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    // Try after layout, then retry after the navigation transition has settled.
+    // The content-size callback can fire before FlatList has a usable viewport.
+    const scrollIfPending = () => {
       if (!initialScrollPending.current) return;
       list.current?.scrollToEnd({ animated: false });
-      initialScrollPending.current = false;
       nearBottomRef.current = true;
       setNearBottom(true);
-    }));
+    };
+    const frame = requestAnimationFrame(() => requestAnimationFrame(scrollIfPending));
+    const fallback = setTimeout(() => {
+      scrollIfPending();
+      initialScrollPending.current = false;
+    }, 300);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(fallback);
+    };
   }, [focusCycle, chat.loading, chat.messages.length]);
 
   const handleContentSizeChange = () => {
     if (initialScrollPending.current) {
-      list.current?.scrollToEnd({ animated: false });
-      initialScrollPending.current = false;
-      nearBottomRef.current = true;
-      setNearBottom(true);
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        if (!initialScrollPending.current) return;
+        list.current?.scrollToEnd({ animated: false });
+        nearBottomRef.current = true;
+        setNearBottom(true);
+      }));
       return;
     }
-    if (nearBottomRef.current) requestAnimationFrame(() => list.current?.scrollToEnd({ animated: true }));
+    if (nearBottomRef.current) requestAnimationFrame(() => requestAnimationFrame(() => list.current?.scrollToEnd({ animated: true })));
   };
 
   const sending = chat.pending.some(item => item.state === 'sending');
