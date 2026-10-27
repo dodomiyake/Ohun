@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
-import { historyQuerySchema, openDirectRequestSchema, personIdSchema, sendMessageRequestSchema } from '@ohun/contracts';
+import { historyQuerySchema, openDirectRequestSchema, personIdSchema, receiptRequestSchema, sendMessageRequestSchema } from '@ohun/contracts';
 import { AuthError, type AuthService } from './auth-service.js';
 import { createRateLimiter } from './rate-limit.js';
 import { createMessagingService, type MessagingService } from './messaging-service.js';
@@ -21,6 +21,11 @@ export function createMessagingRouter(auth:AuthService,service:MessagingService=
  router.post('/direct',route(async(req,res)=>{const {contactId}=openDirectRequestSchema.parse(req.body);res.status(200).json(await service.openDirect(actor(req),contactId));}));
  router.get('/',route(async(req,res)=>{const query=listQuery.parse(req.query);res.json(await service.list(actor(req),query.cursor,query.limit));}));
  router.get('/:id/messages',route(async(req,res)=>{personIdSchema.parse(req.params.id);const query=pagination(req.query);res.json(await service.history(actor(req),req.params.id!,query));}));
+ router.post('/:id/receipts',createRateLimiter(60,60_000,actor),route(async(req,res)=>{
+  personIdSchema.parse(req.params.id);const input=receiptRequestSchema.parse(req.body);const result=await service.acknowledge(actor(req),req.params.id!,input);
+  if(result.changed)try{await publish(result.participantIds,{conversationId:req.params.id!,latestSequence:result.latestSequence});}catch{console.error('[api] messaging notification failed');}
+  res.json({ok:true});
+ }));
  router.post('/:id/messages',createRateLimiter(60,60_000,actor),route(async(req,res)=>{
   personIdSchema.parse(req.params.id);const input=sendMessageRequestSchema.parse(req.body);const result=await service.send(actor(req),req.params.id!,input);
   try{await publish(result.participantIds,{conversationId:result.message.conversationId,latestSequence:result.message.sequence});}catch{console.error('[api] messaging notification failed');}
