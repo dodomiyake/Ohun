@@ -3,7 +3,7 @@ import { ApiError } from '../auth/api';
 
 async function request(token: string, path: string, method: string, signal?: AbortSignal) {
   const base = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, '');
-  if (!base) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+  if (!base) throw new ApiError('configuration_error', 'The app is not configured to connect to Nlẹ́.');
   let response: Response;
   try { response = await fetch(`${base}/api/v1/sessions${path}`, { method, signal, headers: { Authorization: `Bearer ${token}` } }); }
   catch (error) {
