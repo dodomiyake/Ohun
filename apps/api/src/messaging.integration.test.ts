@@ -29,6 +29,17 @@ afterAll(async()=>{await mongoose.disconnect();await replica?.stop();});
 async function connect(first:string,second:string) { const [firstUserId,secondUserId]=[first,second].sort();await Connection.create({pairKey:personPairKey(first,second),firstUserId,secondUserId}); }
 const input=(body='Hello')=>({clientMessageId:randomUUID(),body});
 describe('durable direct messaging',()=>{
+ it('records monotonic receipt states only for the recipient',async()=>{
+  const chat=await service.openDirect(a,b);const sent=(await service.send(a,chat.id,input())).message;
+  expect((await service.history(a,chat.id,{limit:50})).messages[0]?.deliveryStatus).toBe('sent');
+  await expect(service.acknowledge(c,chat.id,{messageIds:[sent.id],state:'read'})).rejects.toMatchObject({status:404});
+  await expect(service.acknowledge(a,chat.id,{messageIds:[sent.id],state:'read'})).rejects.toMatchObject({status:404});
+  await service.acknowledge(b,chat.id,{messageIds:[sent.id],state:'delivered'});
+  expect((await service.history(a,chat.id,{limit:50})).messages[0]?.deliveryStatus).toBe('delivered');
+  await service.acknowledge(b,chat.id,{messageIds:[sent.id],state:'read'});
+  await service.acknowledge(b,chat.id,{messageIds:[sent.id],state:'delivered'});
+  expect((await service.history(a,chat.id,{limit:50})).messages[0]?.deliveryStatus).toBe('read');
+ });
  it('concurrent opens yield one private empty conversation',async()=>{
  const chats=await Promise.all([service.openDirect(a,b),service.openDirect(b,a)]);
  expect(new Set(chats.map(x=>x.id)).size).toBe(1);expect(await DirectConversation.countDocuments()).toBe(1);
