@@ -19,10 +19,13 @@ function dayLabel(value: string) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 }
 
-function Bubble({ message, mine }: { message: Message; mine: boolean }) {
-  return <View style={[s.bubble, mine ? s.mine : s.theirs]}>
-    <Text style={[s.message, mine && s.ownMessage]}>{message.body}</Text>
-    <Text style={[s.time, mine && s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+function Bubble({ message, mine, initial }: { message: Message; mine: boolean; initial: string }) {
+  return <View style={[s.messageRow, mine && s.messageRowMine]}>
+    {!mine && <View style={s.messageAvatar}><Text style={s.messageInitial}>{initial}</Text></View>}
+    <View style={[s.messageGroup, mine && s.messageGroupMine]}>
+      <View style={[s.bubble, mine ? s.mine : s.theirs]}><Text style={[s.message, mine && s.ownMessage]}>{message.body}</Text></View>
+      <Text style={[s.time, mine && s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+    </View>
   </View>;
 }
 
@@ -153,7 +156,7 @@ export function ConversationScreen() {
                 const showDate = !previous || new Date(previous.createdAt).toDateString() !== new Date(item.createdAt).toDateString();
                 return <>
                   {showDate && <View style={s.dateRow}><Text style={s.dateChip}>{dayLabel(item.createdAt)}</Text></View>}
-                  <Bubble message={item} mine={item.senderId !== chat.conversation?.person.id} />
+                  <Bubble message={item} mine={item.senderId !== chat.conversation?.person.id} initial={chat.conversation?.person?.displayName.slice(0, 1).toUpperCase() ?? '?'} />
                 </>;
               }}
               contentContainerStyle={s.messages}
@@ -193,9 +196,9 @@ export function ConversationScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1, backgroundColor: '#ffffff' },
   flex: { flex: 1 },
-  header: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderColor: colors.outlineVariant },
+  header: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, backgroundColor: '#ffffff' },
   back: { minWidth: 40, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
   backGlyph: { fontSize: 32, color: colors.onSurfaceVariant, marginTop: -4 },
   avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center' },
@@ -211,15 +214,21 @@ const s = StyleSheet.create({
   messageEndSpace: { height: 20 },
   dateRow: { alignItems: 'center', marginBottom: 8 },
   dateChip: { overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16, backgroundColor: colors.surfaceContainerLow, color: colors.onSurfaceVariant, fontSize: 12 },
-  bubble: { maxWidth: '82%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, gap: 4 },
-  mine: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 5 },
-  theirs: { alignSelf: 'flex-start', backgroundColor: colors.background, borderWidth: 1, borderColor: colors.outlineVariant, borderBottomLeftRadius: 5 },
-  message: { fontSize: 14, lineHeight: 20, color: colors.onSurface },
+  messageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: 4 },
+  messageRowMine: { justifyContent: 'flex-end' },
+  messageAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  messageInitial: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  messageGroup: { maxWidth: '78%', alignItems: 'flex-start', gap: 4 },
+  messageGroupMine: { alignItems: 'flex-end' },
+  bubble: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20 },
+  mine: { backgroundColor: colors.primary, borderBottomRightRadius: 5 },
+  theirs: { backgroundColor: '#f2f3f5', borderBottomLeftRadius: 5 },
+  message: { fontSize: 15, lineHeight: 22, color: colors.onSurface },
   ownMessage: { color: colors.onPrimary },
-  time: { fontSize: 11, color: colors.onSurfaceVariant, alignSelf: 'flex-end' },
-  ownTime: { color: '#dbe5ff' },
-  composer: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderColor: colors.outlineVariant, backgroundColor: colors.background },
-  composerBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderWidth: 1, borderColor: colors.outlineVariant, borderRadius: 12, backgroundColor: colors.surfaceContainerLow },
+  time: { fontSize: 11, color: colors.onSurfaceVariant, paddingHorizontal: 3 },
+  ownTime: { color: colors.onSurfaceVariant },
+  composer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#ffffff' },
+  composerBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderRadius: 28, backgroundColor: '#f4f5f7' },
   composerAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   composerIcon: { fontFamily: 'MaterialSymbolsUI', fontSize: 24, color: colors.onSurfaceVariant },
   input: { flex: 1, minHeight: 40, maxHeight: 128, paddingHorizontal: 4, paddingVertical: 9, fontSize: 14, color: colors.onSurface, backgroundColor: 'transparent' },
