@@ -13,7 +13,7 @@ export class ApiError extends Error {
 const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, '');
 
 async function post(path: string, body: unknown) {
-  if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+  if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Nlẹ́.');
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let response: Response;
@@ -26,7 +26,7 @@ async function post(path: string, body: unknown) {
     };
     const timeout = new Promise<never>((_resolve, reject) => {
       timer = setTimeout(() => {
-        reject(new ApiError('timeout', path.endsWith('/register') ? 'Ohun did not respond in time. Your account may have been created. Check email verification before trying again.' : 'Ohun did not respond in time. Check your connection and try again.'));
+        reject(new ApiError('timeout', path.endsWith('/register') ? 'Nlẹ́ did not respond in time. Your account may have been created. Check email verification before trying again.' : 'Nlẹ́ did not respond in time. Check your connection and try again.'));
         controller.abort();
       }, 15_000);
     });
@@ -53,7 +53,7 @@ export const nativeAuthApi = {
   async login(input: LoginRequest) { return authResponseSchema.parse(await post('/api/v1/auth/login', input)); },
   async refresh(refreshToken: string) { return authResponseSchema.parse(await post('/api/v1/auth/refresh', { refreshToken })); },
   async logout(refreshToken?: string, accessToken?: string) {
-    if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+    if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Nlẹ́.');
     let response: Response;
     try {
       response = await fetch(`${apiBaseUrl}/api/v1/auth/logout`, {
