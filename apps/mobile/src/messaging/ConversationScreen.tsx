@@ -1,27 +1,153 @@
-import { useLocalSearchParams,router } from 'expo-router';
-import { useEffect,useRef,useState } from 'react';
-import { ActivityIndicator,FlatList,KeyboardAvoidingView,Platform,Pressable,StyleSheet,Text,TextInput,View } from 'react-native';
-import { SafeAreaView,useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, router } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@ohun/design-tokens';
 import { useConversation } from './useConversation';
 import type { Message } from '@ohun/contracts';
-function Bubble({message,mine}:{message:Message;mine:boolean}){return <View style={[s.bubble,mine?s.mine:s.theirs]}><Text style={[s.message,mine&&s.ownMessage]}>{message.body}</Text><Text style={[s.time,mine&&s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}</Text></View>;}
-export function ConversationScreen(){
- const {id}=useLocalSearchParams<{id:string}>();const conversationId=Array.isArray(id)?id[0]!:id;const chat=useConversation(conversationId);const insets=useSafeAreaInsets();const [draft,setDraft]=useState('');const [nearBottom,setNearBottom]=useState(true);const list=useRef<FlatList<Message>>(null);
- useEffect(()=>{if(nearBottom)list.current?.scrollToEnd({animated:true});},[chat.messages.length,nearBottom]);
- const sending=chat.pending.some(item=>item.state==='sending');const canSend=Boolean(draft.trim())&&[...draft].length<=4000&&!sending;
- // Android's Expo window uses adjustResize; height behavior keeps the composer in the
- // resized viewport when the software keyboard opens.
- return <SafeAreaView edges={['top','left','right']} style={s.safe}><KeyboardAvoidingView style={s.flex} behavior={Platform.OS==='ios'?'padding':'height'}>
-  <View style={s.header}><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={()=>router.back()} style={s.back}><Text style={s.backGlyph}>‹</Text></Pressable><View style={s.avatar}><Text style={s.initial}>{chat.conversation?.person?.displayName.slice(0,1).toUpperCase()??'?'}</Text></View><View style={s.identity}><Text numberOfLines={1} style={s.name}>{chat.conversation?.person?.displayName??'Conversation'}</Text><Text style={s.handle}>{chat.conversation?.person?`@${chat.conversation.person.username}`:' '}</Text></View></View>
-  {chat.loading?<View style={s.center}><ActivityIndicator color={colors.primary}/><Text style={s.caption}>Loading messages…</Text></View>:chat.error?<View style={s.center}><Text accessibilityRole="alert" style={s.caption}>Could not load this conversation.</Text><Pressable accessibilityRole="button" style={s.retry} onPress={()=>void chat.refresh()}><Text style={s.retryText}>Retry</Text></Pressable></View>:<>
-   {!chat.conversation?.canSend&&<Text accessibilityLiveRegion="polite" style={s.notice}>You can view this conversation, but sending is unavailable.</Text>}
-   {chat.hasOlder&&<Pressable accessibilityRole="button" onPress={()=>void chat.loadOlder()} style={s.older}><Text style={s.retryText}>Load earlier messages</Text></Pressable>}
-   <FlatList ref={list} data={chat.messages} keyExtractor={item=>item.id} renderItem={({item})=><Bubble message={item} mine={item.senderId!==chat.conversation?.person.id}/>} contentContainerStyle={s.messages} onScroll={event=>{const {contentOffset,contentSize,layoutMeasurement}=event.nativeEvent;setNearBottom(contentSize.height-layoutMeasurement.height-contentOffset.y<100);}} scrollEventThrottle={100} ListEmptyComponent={<View style={s.center}><Text style={s.caption}>Start the conversation</Text></View>} />
-   {!nearBottom&&<Pressable accessibilityRole="button" onPress={()=>list.current?.scrollToEnd({animated:true})} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
-   {chat.pending.map(item=><View key={item.clientMessageId} style={s.pending}><Text style={s.caption}>{item.body}</Text><Text style={s.caption}>{item.state==='sending'?'Sending…':'Could not send'}</Text>{item.state==='failed'&&<Pressable accessibilityRole="button" onPress={()=>void chat.retry(item.clientMessageId).catch(()=>undefined)}><Text style={s.retryText}>Retry</Text></Pressable>}</View>)}
-  </>}
-  <View style={[s.composer,{paddingBottom:Math.max(insets.bottom,8)}]}><TextInput accessibilityLabel="Type a message" placeholder="Type a message…" multiline value={draft} onChangeText={setDraft} style={s.input} maxLength={8000}/><Pressable accessibilityRole="button" accessibilityLabel="Send message" accessibilityState={{disabled:!canSend||!chat.conversation?.canSend}} disabled={!canSend||!chat.conversation?.canSend} style={[s.send,!canSend&&s.sendDisabled]} onPress={()=>{const submitted=draft;void chat.send(submitted).then(()=>setDraft(current=>current===submitted?'':current)).catch(()=>undefined);}}><Text style={s.sendText}>Send</Text></Pressable></View>
- </KeyboardAvoidingView></SafeAreaView>;
+import { AppNav } from '../shells/AppNav';
+
+function dayLabel(value: string) {
+  const date = new Date(value);
+  const today = new Date();
+  const startOfDay = (day: Date) => new Date(day.getFullYear(), day.getMonth(), day.getDate()).getTime();
+  const difference = (startOfDay(today) - startOfDay(date)) / 86_400_000;
+  if (difference === 0) return 'Today';
+  if (difference === 1) return 'Yesterday';
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 }
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:colors.background},flex:{flex:1},header:{minHeight:64,flexDirection:'row',alignItems:'center',gap:12,paddingHorizontal:12,borderBottomWidth:1,borderColor:colors.outlineVariant},back:{minWidth:44,minHeight:44,justifyContent:'center',alignItems:'center'},backGlyph:{fontSize:36,color:colors.primary,marginTop:-6},avatar:{width:40,height:40,borderRadius:20,backgroundColor:colors.secondaryContainer,alignItems:'center',justifyContent:'center'},initial:{fontSize:18,color:colors.primary},identity:{flex:1},name:{fontSize:16,fontWeight:'700',color:colors.onSurface},handle:{fontSize:12,color:colors.onSurfaceVariant},messages:{paddingHorizontal:16,paddingVertical:18,gap:10,flexGrow:1,justifyContent:'flex-end'},bubble:{maxWidth:'82%',paddingHorizontal:14,paddingVertical:10,borderRadius:18,gap:4},mine:{alignSelf:'flex-end',backgroundColor:colors.primary,borderBottomRightRadius:5},theirs:{alignSelf:'flex-start',backgroundColor:'#fff',borderWidth:1,borderColor:colors.outlineVariant,borderBottomLeftRadius:5},message:{fontSize:15,lineHeight:22,color:colors.onSurface},ownMessage:{color:colors.onPrimary},time:{fontSize:11,color:colors.onSurfaceVariant,alignSelf:'flex-end'},ownTime:{color:'#dbe5ff'},composer:{flexDirection:'row',alignItems:'flex-end',gap:8,paddingHorizontal:12,paddingTop:8,borderTopWidth:1,borderColor:colors.outlineVariant,backgroundColor:colors.background},input:{flex:1,minHeight:44,maxHeight:128,borderWidth:1,borderColor:colors.outlineVariant,borderRadius:22,paddingHorizontal:16,paddingTop:11,paddingBottom:9,fontSize:16,color:colors.onSurface,backgroundColor:'#fff'},send:{minHeight:44,minWidth:64,paddingHorizontal:14,borderRadius:22,backgroundColor:colors.primary,justifyContent:'center',alignItems:'center'},sendDisabled:{opacity:.5},sendText:{color:colors.onPrimary,fontSize:14,fontWeight:'700'},center:{flex:1,justifyContent:'center',alignItems:'center',gap:12,padding:24},caption:{fontSize:14,lineHeight:21,color:colors.onSurfaceVariant},retry:{minHeight:44,paddingHorizontal:16,justifyContent:'center'},retryText:{fontSize:14,fontWeight:'600',color:colors.primary},notice:{padding:10,textAlign:'center',color:colors.onSurfaceVariant,backgroundColor:colors.surfaceContainerLow},older:{minHeight:44,alignItems:'center',justifyContent:'center'},newMessages:{position:'absolute',bottom:88,alignSelf:'center',padding:10,borderRadius:20,backgroundColor:colors.surface},pending:{alignSelf:'flex-end',maxWidth:'82%',padding:12,gap:4,backgroundColor:colors.surfaceContainerLow,borderRadius:16}});
+
+function Bubble({ message, mine }: { message: Message; mine: boolean }) {
+  return <View style={[s.bubble, mine ? s.mine : s.theirs]}>
+    <Text style={[s.message, mine && s.ownMessage]}>{message.body}</Text>
+    <Text style={[s.time, mine && s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+  </View>;
+}
+
+function UnavailableAction({ glyph, label }: { glyph: string; label: string }) {
+  return <Pressable accessibilityRole="button" accessibilityLabel={`${label} coming soon`} accessibilityState={{ disabled: true }} disabled style={s.headerAction}>
+    <Text accessible={false} style={s.actionGlyph}>{glyph}</Text>
+  </Pressable>;
+}
+
+export function ConversationScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const conversationId = Array.isArray(id) ? id[0]! : id;
+  const chat = useConversation(conversationId);
+  const [draft, setDraft] = useState('');
+  const [nearBottom, setNearBottom] = useState(true);
+  const list = useRef<FlatList<Message>>(null);
+
+  useEffect(() => { if (nearBottom) list.current?.scrollToEnd({ animated: true }); }, [chat.messages.length, nearBottom]);
+
+  const sending = chat.pending.some(item => item.state === 'sending');
+  const canSend = Boolean(draft.trim()) && [...draft].length <= 4000 && !sending;
+
+  return <SafeAreaView edges={['top', 'left', 'right', 'bottom']} style={s.safe}>
+    <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={s.header}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={s.back}>
+          <Text accessible={false} style={s.backGlyph}>‹</Text>
+        </Pressable>
+        <View style={s.avatar}><Text style={s.initial}>{chat.conversation?.person?.displayName.slice(0, 1).toUpperCase() ?? '?'}</Text></View>
+        <View style={s.identity}>
+          <Text numberOfLines={1} style={s.name}>{chat.conversation?.person?.displayName ?? 'Conversation'}</Text>
+          <Text numberOfLines={1} style={s.handle}>{chat.conversation?.person ? `@${chat.conversation.person.username}` : ' '}</Text>
+        </View>
+        <View style={s.actions}>
+          <UnavailableAction glyph="▣" label="Video call" />
+          <UnavailableAction glyph="☎" label="Voice call" />
+          <UnavailableAction glyph="⋮" label="More options" />
+        </View>
+      </View>
+
+      {chat.loading ? <View style={s.center}><ActivityIndicator color={colors.primary} /><Text style={s.caption}>Loading messages…</Text></View>
+        : chat.error ? <View style={s.center}><Text accessibilityRole="alert" style={s.caption}>Could not load this conversation.</Text><Pressable accessibilityRole="button" style={s.retry} onPress={() => void chat.refresh()}><Text style={s.retryText}>Retry</Text></Pressable></View>
+          : <>
+            {!chat.conversation?.canSend && <Text accessibilityLiveRegion="polite" style={s.notice}>You can view this conversation, but sending is unavailable.</Text>}
+            {chat.hasOlder && <Pressable accessibilityRole="button" onPress={() => void chat.loadOlder()} style={s.older}><Text style={s.retryText}>Load earlier messages</Text></Pressable>}
+            <FlatList
+              ref={list}
+              data={chat.messages}
+              keyExtractor={item => item.id}
+              renderItem={({ item, index }) => {
+                const previous = chat.messages[index - 1];
+                const showDate = !previous || new Date(previous.createdAt).toDateString() !== new Date(item.createdAt).toDateString();
+                return <>
+                  {showDate && <View style={s.dateRow}><Text style={s.dateChip}>{dayLabel(item.createdAt)}</Text></View>}
+                  <Bubble message={item} mine={item.senderId !== chat.conversation?.person.id} />
+                </>;
+              }}
+              contentContainerStyle={s.messages}
+              onScroll={event => {
+                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                setNearBottom(contentSize.height - layoutMeasurement.height - contentOffset.y < 100);
+              }}
+              scrollEventThrottle={100}
+              ListEmptyComponent={<View style={s.center}><Text style={s.caption}>Start the conversation</Text></View>}
+            />
+            {!nearBottom && <Pressable accessibilityRole="button" onPress={() => list.current?.scrollToEnd({ animated: true })} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
+            {chat.pending.map(item => <View key={item.clientMessageId} style={s.pending}><Text style={s.caption}>{item.body}</Text><Text style={s.caption}>{item.state === 'sending' ? 'Sending…' : 'Could not send'}</Text>{item.state === 'failed' && <Pressable accessibilityRole="button" onPress={() => void chat.retry(item.clientMessageId).catch(() => undefined)}><Text style={s.retryText}>Retry</Text></Pressable>}</View>)}
+          </>}
+
+      <View style={s.composer}>
+        <View style={s.composerBar}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Attachments coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.actionGlyph}>＋</Text></Pressable>
+          <TextInput accessibilityLabel="Type a message" placeholder="Type a message…" multiline value={draft} onChangeText={setDraft} style={s.input} maxLength={8000} />
+          <Pressable accessibilityRole="button" accessibilityLabel="Emoji picker coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.emojiGlyph}>☺</Text></Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Send message"
+            accessibilityState={{ disabled: !canSend || !chat.conversation?.canSend }}
+            disabled={!canSend || !chat.conversation?.canSend}
+            style={[s.send, !canSend && s.sendDisabled]}
+            onPress={() => { const submitted = draft; void chat.send(submitted).then(() => setDraft(current => current === submitted ? '' : current)).catch(() => undefined); }}
+          ><Text style={s.sendText}>➤</Text></Pressable>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+    <AppNav active="Chats" />
+  </SafeAreaView>;
+}
+
+const s = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: colors.background },
+  flex: { flex: 1 },
+  header: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderColor: colors.outlineVariant },
+  back: { minWidth: 40, minHeight: 44, justifyContent: 'center', alignItems: 'center' },
+  backGlyph: { fontSize: 32, color: colors.onSurfaceVariant, marginTop: -4 },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center' },
+  initial: { fontSize: 18, color: colors.primary },
+  identity: { flex: 1, minWidth: 0 },
+  name: { fontSize: 17, fontWeight: '600', color: colors.onSurface },
+  handle: { fontSize: 12, color: colors.onSurfaceVariant },
+  actions: { flexDirection: 'row', alignItems: 'center' },
+  headerAction: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
+  actionGlyph: { fontSize: 21, color: colors.onSurfaceVariant },
+  messages: { paddingHorizontal: 16, paddingVertical: 18, gap: 10, flexGrow: 1, justifyContent: 'flex-end' },
+  dateRow: { alignItems: 'center', marginBottom: 8 },
+  dateChip: { overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16, backgroundColor: colors.surfaceContainerLow, color: colors.onSurfaceVariant, fontSize: 12 },
+  bubble: { maxWidth: '82%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, gap: 4 },
+  mine: { alignSelf: 'flex-end', backgroundColor: colors.primary, borderBottomRightRadius: 5 },
+  theirs: { alignSelf: 'flex-start', backgroundColor: colors.background, borderWidth: 1, borderColor: colors.outlineVariant, borderBottomLeftRadius: 5 },
+  message: { fontSize: 14, lineHeight: 20, color: colors.onSurface },
+  ownMessage: { color: colors.onPrimary },
+  time: { fontSize: 11, color: colors.onSurfaceVariant, alignSelf: 'flex-end' },
+  ownTime: { color: '#dbe5ff' },
+  composer: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderColor: colors.outlineVariant, backgroundColor: colors.background },
+  composerBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderWidth: 1, borderColor: colors.outlineVariant, borderRadius: 12, backgroundColor: colors.surfaceContainerLow },
+  composerAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  emojiGlyph: { fontSize: 24, color: colors.onSurfaceVariant },
+  input: { flex: 1, minHeight: 40, maxHeight: 128, paddingHorizontal: 4, paddingVertical: 9, fontSize: 14, color: colors.onSurface, backgroundColor: 'transparent' },
+  send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  sendDisabled: { opacity: 0.5 },
+  sendText: { color: colors.onPrimary, fontSize: 20, fontWeight: '700', transform: [{ rotate: '-20deg' }] },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 },
+  caption: { fontSize: 14, lineHeight: 21, color: colors.onSurfaceVariant },
+  retry: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center' },
+  retryText: { fontSize: 14, fontWeight: '600', color: colors.primary },
+  notice: { padding: 10, textAlign: 'center', color: colors.onSurfaceVariant, backgroundColor: colors.surfaceContainerLow },
+  older: { minHeight: 44, alignItems: 'center', justifyContent: 'center' },
+  newMessages: { position: 'absolute', bottom: 88, alignSelf: 'center', padding: 10, borderRadius: 20, backgroundColor: colors.surface },
+  pending: { alignSelf: 'flex-end', maxWidth: '82%', padding: 12, gap: 4, backgroundColor: colors.surfaceContainerLow, borderRadius: 16 },
+});
