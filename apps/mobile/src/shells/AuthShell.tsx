@@ -13,7 +13,7 @@ export function AuthShell() {
           accessibilityIgnoresInvertColors
           accessible={false}
         />
-        <Text style={[sharedStyles.title, styles.brand]}>Nlẹ́</Text>
+        
         <Text style={sharedStyles.body}>
           Sign in to continue private conversations with friends and family.
         </Text>
