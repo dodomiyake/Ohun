@@ -1,6 +1,6 @@
 import mongoose, { type ClientSession } from 'mongoose';
 import { z } from 'zod';
-import { personIdSchema, historyQuerySchema, sendMessageRequestSchema, messageSchema, type Message, type Conversation, type ConversationPage, type MessagePage, type HistoryQuery, type SendMessageRequest } from '@ohun/contracts';
+import { personIdSchema, historyQuerySchema, sendMessageRequestSchema, receiptRequestSchema, messageSchema, type Message, type Conversation, type ConversationPage, type MessagePage, type HistoryQuery, type SendMessageRequest, type ReceiptRequest } from '@ohun/contracts';
 import { AuthError } from './auth-service.js';
 import { User, Profile } from './models.js';
 import { Connection, PersonBlock } from './people-models.js';
@@ -10,8 +10,8 @@ import { DirectConversation, DirectMessage, type StoredConversation } from './me
 const unavailable = () => new AuthError(404, 'conversation_unavailable', 'This conversation is unavailable.');
 const cursorSchema = z.object({ time: z.string().datetime(), id: personIdSchema }).strict();
 type ChatRecord = mongoose.HydratedDocument<StoredConversation>;
-function serializeMessage(record: { _id?: unknown; conversationId: unknown; senderId: unknown; clientMessageId: string; body: string; sequence: number; createdAt: Date }): Message {
-  return messageSchema.parse({ id: String(record._id), conversationId: String(record.conversationId), senderId: String(record.senderId), clientMessageId: record.clientMessageId, body: record.body, sequence: record.sequence, createdAt: record.createdAt.toISOString() });
+function serializeMessage(record: { _id?: unknown; conversationId: unknown; senderId: unknown; clientMessageId: string; body: string; sequence: number; createdAt: Date; deliveredAt?: Date | null; readAt?: Date | null }): Message {
+  return messageSchema.parse({ id: String(record._id), conversationId: String(record.conversationId), senderId: String(record.senderId), clientMessageId: record.clientMessageId, body: record.body, sequence: record.sequence, createdAt: record.createdAt.toISOString(), deliveryStatus: record.readAt ? 'read' : record.deliveredAt ? 'delivered' : 'sent' });
 }
 async function allowed(pairKey: string, session?: ClientSession) {
   return Boolean(await Connection.findOne({ pairKey }).session(session ?? null)) && !await PersonBlock.findOne({ pairKey }).session(session ?? null);
@@ -61,6 +61,31 @@ export function createMessagingService(now = () => new Date()) {
       const rows = await DirectMessage.find({ conversationId: id, sequence: range }).sort({ sequence: after ? 1 : -1 }).limit(query.limit + 1);
       const page = rows.slice(0, query.limit); if (!after) page.reverse();
       return { messages: page.map(serializeMessage), latestSequence, conversation: await serializeConversation(actor, chat), nextBefore: !after && rows.length > query.limit ? page[0]!.sequence : null, nextAfter: after && rows.length > query.limit ? page.at(-1)!.sequence : null };
+    },
+    async acknowledge(actor: string, id: string, input: ReceiptRequest): Promise<{ participantIds: string[]; latestSequence: number; changed: boolean }> {
+      const request = receiptRequestSchema.parse(input);
+      const ids = [...new Set(request.messageIds)];
+      return mongoose.connection.transaction(async session => {
+        const chat = await membership(actor, id, session);
+        const messages = await DirectMessage.find({ _id: { $in: ids }, conversationId: id, senderId: { $ne: actor } }).session(session);
+        if (messages.length !== ids.length) throw unavailable();
+        let changed = false;
+        for (const message of messages) {
+          let updated = false;
+          if (!message.deliveredAt) { message.deliveredAt = now(); updated = true; }
+          if (request.state === 'read' && !message.readAt) { message.readAt = now(); updated = true; }
+          if (updated) {
+            await message.save({ session });
+            changed = true;
+            if (chat.lastMessage && chat.lastMessage.sequence === message.sequence) {
+              chat.lastMessage.deliveredAt = message.deliveredAt;
+              chat.lastMessage.readAt = message.readAt;
+            }
+          }
+        }
+        if (changed && chat.isModified('lastMessage')) await chat.save({ session });
+        return { participantIds: chat.participantIds.map(String), latestSequence: chat.nextSequence, changed };
+      });
     },
     async send(actor: string, id: string, input: SendMessageRequest): Promise<{ message: Message; participantIds: string[]; created: boolean }> {
       const request = sendMessageRequestSchema.parse(input);
