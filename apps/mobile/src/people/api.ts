@@ -2,7 +2,7 @@ import { discoveryPreferencesSchema, invitationsResponseSchema, peopleResponseSc
 import { ApiError } from '../auth/api';
 const base = process.env.EXPO_PUBLIC_API_BASE_URL?.replace(/\/$/, '');
 async function request(token: string, path: string, body?: unknown, method = 'POST') {
-  if (!base) throw new ApiError('configuration_error', 'Nlẹ́ API is not configured.');
+  if (!base) throw new ApiError('configuration_error', 'The API is not configured.');
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -12,7 +12,7 @@ async function request(token: string, path: string, body?: unknown, method = 'PO
       if (!response.ok) throw new ApiError(data?.error?.code ?? 'request_failed', data?.error?.message ?? 'Please try again.', response.status);
       return data as unknown;
     };
-    return await Promise.race([operation(), new Promise<never>((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new ApiError('timeout', 'Nlẹ́ did not respond. Please try again.')); }, 15000); })]);
+    return await Promise.race([operation(), new Promise<never>((_, reject) => { timer = setTimeout(() => { controller.abort(); reject(new ApiError('timeout', 'The app did not respond. Please try again.')); }, 15000); })]);
   } catch (error) { if (error instanceof ApiError) throw error; throw new ApiError('offline', 'Check your connection and try again.'); }
   finally { clearTimeout(timer); }
 }
