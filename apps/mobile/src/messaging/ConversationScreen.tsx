@@ -1,6 +1,8 @@
 import { useLocalSearchParams, router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useFonts } from 'expo-font';
+import { MaterialSymbols_400Regular } from '@expo-google-fonts/material-symbols/400Regular';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@ohun/design-tokens';
 import { useConversation } from './useConversation';
@@ -24,9 +26,9 @@ function Bubble({ message, mine }: { message: Message; mine: boolean }) {
   </View>;
 }
 
-function UnavailableAction({ glyph, label }: { glyph: string; label: string }) {
+function UnavailableAction({ icon, label }: { icon: string; label: string }) {
   return <Pressable accessibilityRole="button" accessibilityLabel={`${label} coming soon`} accessibilityState={{ disabled: true }} disabled style={s.headerAction}>
-    <Text accessible={false} style={s.actionGlyph}>{glyph}</Text>
+    <Text accessible={false} style={s.icon}>{icon}</Text>
   </Pressable>;
 }
 
@@ -34,6 +36,7 @@ export function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const conversationId = Array.isArray(id) ? id[0]! : id;
   const chat = useConversation(conversationId);
+  const [iconsReady] = useFonts({ MaterialSymbolsUI: MaterialSymbols_400Regular });
   const [draft, setDraft] = useState('');
   const [nearBottom, setNearBottom] = useState(true);
   const list = useRef<FlatList<Message>>(null);
@@ -55,9 +58,11 @@ export function ConversationScreen() {
           <Text numberOfLines={1} style={s.handle}>{chat.conversation?.person ? `@${chat.conversation.person.username}` : ' '}</Text>
         </View>
         <View style={s.actions}>
-          <UnavailableAction glyph="▣" label="Video call" />
-          <UnavailableAction glyph="☎" label="Voice call" />
-          <UnavailableAction glyph="⋮" label="More options" />
+          {iconsReady && <>
+            <UnavailableAction icon="videocam" label="Video call" />
+            <UnavailableAction icon="call" label="Voice call" />
+            <UnavailableAction icon="more_vert" label="More options" />
+          </>}
         </View>
       </View>
 
@@ -92,9 +97,9 @@ export function ConversationScreen() {
 
       <View style={s.composer}>
         <View style={s.composerBar}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Attachments coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.actionGlyph}>＋</Text></Pressable>
+          {iconsReady && <Pressable accessibilityRole="button" accessibilityLabel="Attachments coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.composerIcon}>add</Text></Pressable>}
           <TextInput accessibilityLabel="Type a message" placeholder="Type a message…" multiline value={draft} onChangeText={setDraft} style={s.input} maxLength={8000} />
-          <Pressable accessibilityRole="button" accessibilityLabel="Emoji picker coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.emojiGlyph}>☺</Text></Pressable>
+          {iconsReady && <Pressable accessibilityRole="button" accessibilityLabel="Emoji picker coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.composerIcon}>mood</Text></Pressable>}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Send message"
@@ -102,7 +107,7 @@ export function ConversationScreen() {
             disabled={!canSend || !chat.conversation?.canSend}
             style={[s.send, !canSend && s.sendDisabled]}
             onPress={() => { const submitted = draft; void chat.send(submitted).then(() => setDraft(current => current === submitted ? '' : current)).catch(() => undefined); }}
-          ><Text style={s.sendText}>➤</Text></Pressable>
+          >{iconsReady ? <Text style={s.sendIcon}>send</Text> : null}</Pressable>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -123,7 +128,7 @@ const s = StyleSheet.create({
   handle: { fontSize: 12, color: colors.onSurfaceVariant },
   actions: { flexDirection: 'row', alignItems: 'center' },
   headerAction: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
-  actionGlyph: { fontSize: 21, color: colors.onSurfaceVariant },
+  icon: { fontFamily: 'MaterialSymbolsUI', fontSize: 22, color: colors.onSurfaceVariant },
   messages: { paddingHorizontal: 16, paddingVertical: 18, gap: 10, flexGrow: 1, justifyContent: 'flex-end' },
   dateRow: { alignItems: 'center', marginBottom: 8 },
   dateChip: { overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16, backgroundColor: colors.surfaceContainerLow, color: colors.onSurfaceVariant, fontSize: 12 },
@@ -137,11 +142,11 @@ const s = StyleSheet.create({
   composer: { paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: 1, borderColor: colors.outlineVariant, backgroundColor: colors.background },
   composerBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderWidth: 1, borderColor: colors.outlineVariant, borderRadius: 12, backgroundColor: colors.surfaceContainerLow },
   composerAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  emojiGlyph: { fontSize: 24, color: colors.onSurfaceVariant },
+  composerIcon: { fontFamily: 'MaterialSymbolsUI', fontSize: 24, color: colors.onSurfaceVariant },
   input: { flex: 1, minHeight: 40, maxHeight: 128, paddingHorizontal: 4, paddingVertical: 9, fontSize: 14, color: colors.onSurface, backgroundColor: 'transparent' },
   send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   sendDisabled: { opacity: 0.5 },
-  sendText: { color: colors.onPrimary, fontSize: 20, fontWeight: '700', transform: [{ rotate: '-20deg' }] },
+  sendIcon: { fontFamily: 'MaterialSymbolsUI', color: colors.onPrimary, fontSize: 20 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 },
   caption: { fontSize: 14, lineHeight: 21, color: colors.onSurfaceVariant },
   retry: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center' },
