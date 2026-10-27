@@ -26,6 +26,15 @@ it('opens direct conversations and reads bounded history',async()=>{
  expect((await client.history('token',id,{afterSequence:0,limit:50})).messages).toEqual([]);
  expect(new URL(calls[1]).searchParams.get('afterSequence')).toBe('0');
 });
+it('sends a recipient receipt using authenticated bounded input',async()=>{
+ let url='';let options:RequestInit|undefined;
+ const client=transport.createMessagingClient({baseUrl:'https://example.test',fetch:async(input,init)=>{url=String(input);options=init;return new Response(JSON.stringify({ok:true}));}});
+ await client.acknowledge('token',id,{messageIds:[id],state:'read'});
+ expect(url).toBe(`https://example.test/api/v1/conversations/${id}/receipts`);
+ expect(options?.headers).toMatchObject({Authorization:'Bearer token'});
+ expect(JSON.parse(options!.body as string)).toEqual({messageIds:[id],state:'read'});
+ await expect(client.acknowledge('token',id,{messageIds:[],state:'read'})).rejects.toThrow();
+});
 it.each([401,429])('retains HTTP error status %s and retry guidance',async status=>{
  const client=transport.createMessagingClient({baseUrl:'https://example.test',fetch:async()=>new Response(JSON.stringify({error:{code:'denied',message:'Try again'}}),{status,headers:{'Retry-After':'60'}})});
  await expect(client.list('token')).rejects.toMatchObject({status,code:'denied',retryAfter:60});
