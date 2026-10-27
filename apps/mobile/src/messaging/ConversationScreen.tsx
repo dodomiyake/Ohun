@@ -1,7 +1,8 @@
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
+import type { LayoutChangeEvent } from 'react-native';
 import { MaterialSymbols_400Regular } from '@expo-google-fonts/material-symbols/400Regular';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@ohun/design-tokens';
