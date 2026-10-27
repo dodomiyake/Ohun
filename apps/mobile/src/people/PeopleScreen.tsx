@@ -62,7 +62,7 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
   const allInvitations = invitations.data?.pages.flatMap(page => page.invitations) ?? [];
   const loading = preferences.isPending || contacts.isPending || invitations.isPending;
   return <SafeAreaView style={s.safe}>
-    <View style={s.header}><Text style={s.brand}>Nlẹ́</Text><Text style={s.caption}>{requests ? 'Requests' : 'People'}</Text></View>
+    <View style={s.header}><Text style={s.caption}>{requests ? 'Requests' : 'People'}</Text></View>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
       <Text accessibilityRole="header" style={s.title}>{requests ? 'Contact requests' : 'Find People'}</Text>
       <Text style={s.caption}>{requests ? 'Accept a request to add each other as contacts. Ignoring a request does not notify the sender.' : 'Search for friends and family by their exact username.'}</Text>
