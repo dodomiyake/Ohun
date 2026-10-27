@@ -63,7 +63,7 @@ export function ConversationScreen() {
     // The content-size callback can fire before FlatList has a usable viewport.
     const scrollIfPending = () => {
       if (!initialScrollPending.current) return;
-      list.current?.scrollToEnd({ animated: false });
+      list.current?.scrollToOffset({ offset: 1_000_000_000, animated: false });
       nearBottomRef.current = true;
       setNearBottom(true);
     };
@@ -81,7 +81,7 @@ export function ConversationScreen() {
   const scheduleScrollToLatest = (animated = false) => {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!initialScrollPending.current && !nearBottomRef.current) return;
-      list.current?.scrollToEnd({ animated });
+      list.current?.scrollToOffset({ offset: 1_000_000_000, animated });
       nearBottomRef.current = true;
       setNearBottom(true);
     }));
@@ -149,8 +149,9 @@ export function ConversationScreen() {
               }}
               scrollEventThrottle={100}
               ListEmptyComponent={<View style={s.center}><Text style={s.caption}>Start the conversation</Text></View>}
+              ListFooterComponent={<View style={s.messageEndSpace} />}
             />
-            {!nearBottom && <Pressable accessibilityRole="button" onPress={() => { nearBottomRef.current = true; setNearBottom(true); list.current?.scrollToEnd({ animated: true }); }} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
+            {!nearBottom && <Pressable accessibilityRole="button" onPress={() => { nearBottomRef.current = true; setNearBottom(true); list.current?.scrollToOffset({ offset: 1_000_000_000, animated: true }); }} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
             {chat.pending.map(item => <View key={item.clientMessageId} style={s.pending}><Text style={s.caption}>{item.body}</Text><Text style={s.caption}>{item.state === 'sending' ? 'Sending…' : 'Could not send'}</Text>{item.state === 'failed' && <Pressable accessibilityRole="button" onPress={() => void chat.retry(item.clientMessageId).catch(() => undefined)}><Text style={s.retryText}>Retry</Text></Pressable>}</View>)}
           </>}
 
@@ -189,7 +190,8 @@ const s = StyleSheet.create({
   headerAction: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
   icon: { fontFamily: 'MaterialSymbolsUI', fontSize: 22, color: colors.onSurfaceVariant },
   list: { flex: 1 },
-  messages: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, gap: 10, flexGrow: 1, justifyContent: 'flex-end' },
+  messages: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 0, gap: 10, flexGrow: 1, justifyContent: 'flex-end' },
+  messageEndSpace: { height: 20 },
   dateRow: { alignItems: 'center', marginBottom: 8 },
   dateChip: { overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16, backgroundColor: colors.surfaceContainerLow, color: colors.onSurfaceVariant, fontSize: 12 },
   bubble: { maxWidth: '82%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, gap: 4 },
