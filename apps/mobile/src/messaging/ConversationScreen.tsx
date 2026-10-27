@@ -1,6 +1,6 @@
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, LayoutChangeEvent, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { MaterialSymbols_400Regular } from '@expo-google-fonts/material-symbols/400Regular';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -43,6 +43,8 @@ export function ConversationScreen() {
   const list = useRef<FlatList<Message>>(null);
   const nearBottomRef = useRef(true);
   const initialScrollPending = useRef(false);
+  const contentHeight = useRef(0);
+  const viewportHeight = useRef(0);
 
   useFocusEffect(useCallback(() => {
     // Returning from another tab or screen should reopen this conversation at
@@ -63,7 +65,8 @@ export function ConversationScreen() {
     // The content-size callback can fire before FlatList has a usable viewport.
     const scrollIfPending = () => {
       if (!initialScrollPending.current) return;
-      list.current?.scrollToOffset({ offset: 1_000_000_000, animated: false });
+      const offset = Math.max(0, contentHeight.current - viewportHeight.current);
+      list.current?.scrollToOffset({ offset, animated: false });
       nearBottomRef.current = true;
       setNearBottom(true);
     };
@@ -81,17 +84,20 @@ export function ConversationScreen() {
   const scheduleScrollToLatest = (animated = false) => {
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (!initialScrollPending.current && !nearBottomRef.current) return;
-      list.current?.scrollToOffset({ offset: 1_000_000_000, animated });
+      const offset = Math.max(0, contentHeight.current - viewportHeight.current);
+      list.current?.scrollToOffset({ offset, animated });
       nearBottomRef.current = true;
       setNearBottom(true);
     }));
   };
 
-  const handleListLayout = () => {
+  const handleListLayout = (event: LayoutChangeEvent) => {
+    viewportHeight.current = event.nativeEvent.layout.height;
     if (initialScrollPending.current) scheduleScrollToLatest(false);
   };
 
-  const handleContentSizeChange = () => {
+  const handleContentSizeChange = (_width: number, height: number) => {
+    contentHeight.current = height;
     if (initialScrollPending.current || nearBottomRef.current) {
       scheduleScrollToLatest(nearBottomRef.current && !initialScrollPending.current);
     }
@@ -151,7 +157,7 @@ export function ConversationScreen() {
               ListEmptyComponent={<View style={s.center}><Text style={s.caption}>Start the conversation</Text></View>}
               ListFooterComponent={<View style={s.messageEndSpace} />}
             />
-            {!nearBottom && <Pressable accessibilityRole="button" onPress={() => { nearBottomRef.current = true; setNearBottom(true); list.current?.scrollToOffset({ offset: 1_000_000_000, animated: true }); }} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
+            {!nearBottom && <Pressable accessibilityRole="button" onPress={() => { nearBottomRef.current = true; setNearBottom(true); list.current?.scrollToOffset({ offset: Math.max(0, contentHeight.current - viewportHeight.current), animated: true }); }} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
             {chat.pending.map(item => <View key={item.clientMessageId} style={s.pending}><Text style={s.caption}>{item.body}</Text><Text style={s.caption}>{item.state === 'sending' ? 'Sending…' : 'Could not send'}</Text>{item.state === 'failed' && <Pressable accessibilityRole="button" onPress={() => void chat.retry(item.clientMessageId).catch(() => undefined)}><Text style={s.retryText}>Retry</Text></Pressable>}</View>)}
           </>}
 
