@@ -22,6 +22,6 @@ export default function LoginScreen() {
     <Text style={authStyles.label}>Password</Text><PasswordField value={password} onChangeText={setPassword} autoComplete="current-password" placeholder="Enter your password" accessibilityLabel="Password" onSubmitEditing={() => void submit()} />
     <Link href="/(auth)/forgot-password" asChild><Pressable style={StyleSheet.flatten([authStyles.link, { alignItems: 'flex-end' }])} accessibilityRole="link"><Text style={authStyles.linkText}>Forgot password?</Text></Pressable></Link>
     <Pressable style={[authStyles.button, busy ? authStyles.buttonDisabled : null]} onPress={() => void submit()} disabled={busy || !identifier || !password} accessibilityRole="button" accessibilityState={{ disabled: busy || !identifier || !password, busy }}><Text style={authStyles.buttonText}>{busy ? 'Signing in…' : 'Sign in'}</Text></Pressable>
-    <Link href="/(auth)/register" asChild><Pressable style={authStyles.link} accessibilityRole="link"><Text style={authStyles.linkText}>New to Nlẹ́? Create an account</Text></Pressable></Link>
+    <Link href="/(auth)/register" asChild><Pressable style={authStyles.link} accessibilityRole="link"><Text style={authStyles.linkText}>New here? Create an account</Text></Pressable></Link>
   </AuthFrame>;
 }
