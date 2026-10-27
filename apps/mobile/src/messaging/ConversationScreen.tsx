@@ -46,6 +46,7 @@ export function ConversationScreen() {
   const initialScrollPending = useRef(false);
   const contentHeight = useRef(0);
   const viewportHeight = useRef(0);
+  const followKeyboardResize = useRef(false);
 
   useFocusEffect(useCallback(() => {
     // Returning from another tab or screen should reopen this conversation at
@@ -93,8 +94,18 @@ export function ConversationScreen() {
   };
 
   const handleListLayout = (event: LayoutChangeEvent) => {
+    const previousHeight = viewportHeight.current;
     viewportHeight.current = event.nativeEvent.layout.height;
     if (initialScrollPending.current) scheduleScrollToLatest(false);
+    else if (followKeyboardResize.current && previousHeight !== viewportHeight.current) {
+      requestAnimationFrame(() => {
+        if (!followKeyboardResize.current) return;
+        const offset = Math.max(0, contentHeight.current - viewportHeight.current);
+        list.current?.scrollToOffset({ offset, animated: false });
+        nearBottomRef.current = true;
+        setNearBottom(true);
+      });
+    }
   };
 
   const handleContentSizeChange = (_width: number, height: number) => {
@@ -148,6 +159,7 @@ export function ConversationScreen() {
               }}
               contentContainerStyle={s.messages}
               onContentSizeChange={handleContentSizeChange}
+              onScrollBeginDrag={() => { followKeyboardResize.current = false; }}
               onScroll={event => {
                 const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
                 const atBottom = contentSize.height - layoutMeasurement.height - contentOffset.y < 100;
@@ -165,7 +177,7 @@ export function ConversationScreen() {
       <View style={s.composer}>
         <View style={s.composerBar}>
           {iconsReady && <Pressable accessibilityRole="button" accessibilityLabel="Attachments coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.composerIcon}>add</Text></Pressable>}
-          <TextInput accessibilityLabel="Type a message" placeholder="Type a message…" multiline value={draft} onChangeText={setDraft} style={s.input} maxLength={8000} />
+          <TextInput accessibilityLabel="Type a message" placeholder="Type a message…" multiline onFocus={() => { followKeyboardResize.current = nearBottomRef.current; }} onBlur={() => { followKeyboardResize.current = false; }} value={draft} onChangeText={setDraft} style={s.input} maxLength={8000} />
           {iconsReady && <Pressable accessibilityRole="button" accessibilityLabel="Emoji picker coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.composerIcon}>mood</Text></Pressable>}
           <Pressable
             accessibilityRole="button"
