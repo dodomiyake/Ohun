@@ -8,8 +8,7 @@ import { AppNav } from '../shells/AppNav';
 import { messagingApi } from './api';
 export function ChatsScreen(){
  const auth=useAuth();const userId=auth.user!.id;const query=useQuery({queryKey:['messaging',userId,'chats'],queryFn:()=>messagingApi.list(auth.accessToken!),retry:false});
- return <SafeAreaView style={s.safe}><View style={s.header}><Text style={s.brand}>Nlẹ́</Text><Pressable accessibilityRole="button" accessibilityLabel="Find contacts" onPress={()=>router.replace('/(app)/people')} style={s.headerButton}><Text style={s.headerLabel}>Find people</Text></Pressable></View><ScrollView contentContainerStyle={s.body}>
-  <Text accessibilityRole="header" style={s.title}>Chats</Text>
+ return <SafeAreaView style={s.safe}><View style={s.header}><Text accessibilityRole="header" style={s.title}>Chats</Text><Pressable accessibilityRole="button" accessibilityLabel="Find contacts" onPress={()=>router.replace('/(app)/people')} style={s.headerButton}><Text style={s.headerLabel}>Find people</Text></Pressable></View><ScrollView contentContainerStyle={s.body}>
   {query.isPending&&<Text accessibilityLiveRegion="polite" style={s.muted}>Loading conversations…</Text>}
   {query.error&&<View style={s.empty}><Text accessibilityRole="alert" style={s.muted}>Could not load conversations. Check your connection and try again.</Text><Pressable accessibilityRole="button" style={s.button} onPress={()=>void query.refetch()}><Text style={s.buttonText}>Retry</Text></Pressable></View>}
   {!query.isPending&&!query.error&&!query.data?.conversations.length&&<View style={s.empty}><Text style={s.emptyTitle}>Your conversations will appear here</Text><Text style={s.muted}>Choose an accepted contact to start a private chat.</Text><Pressable accessibilityRole="button" style={s.button} onPress={()=>router.replace('/(app)/people')}><Text style={s.buttonText}>Find contacts</Text></Pressable></View>}
