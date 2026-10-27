@@ -8,7 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@ohun/design-tokens';
 import { useConversation } from './useConversation';
 import type { Message } from '@ohun/contracts';
-import { AppNav } from '../shells/AppNav';
 
 function dayLabel(value: string) {
   const date = new Date(value);
@@ -190,7 +189,6 @@ export function ConversationScreen() {
         </View>
       </View>
     </KeyboardAvoidingView>
-    <AppNav active="Chats" />
   </SafeAreaView>;
 }
 
