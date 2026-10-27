@@ -30,4 +30,11 @@ describe('messaging contracts', () => {
     expect(contracts.conversationChangedSchema.parse({ conversationId: id, latestSequence: 1 })).toEqual({ conversationId: id, latestSequence: 1 });
     expect(contracts.conversationChangedSchema.safeParse({ conversationId: id, latestSequence: 1, body: 'private' }).success).toBe(false);
   });
+  it('validates bounded recipient receipt acknowledgements', () => {
+    expect(contracts).toHaveProperty('receiptRequestSchema');
+    const schema = contracts.receiptRequestSchema;
+    expect(schema.safeParse({ messageIds: [id], state: 'delivered' }).success).toBe(true);
+    expect(schema.safeParse({ messageIds: [id], state: 'read' }).success).toBe(true);
+    for (const bad of [{ messageIds: [], state: 'read' }, { messageIds: Array(51).fill(id), state: 'read' }, { messageIds: ['bad'], state: 'read' }, { messageIds: [id], state: 'sent' }, { messageIds: [id], state: 'read', userId: id }]) expect(schema.safeParse(bad).success).toBe(false);
+  });
 });
