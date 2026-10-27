@@ -9,6 +9,8 @@ import { useAuth } from '../auth/AuthProvider';
 import { ApiError } from '../auth/api';
 import { AppNav } from '../shells/AppNav';
 import { peopleApi } from './api';
+import { messagingApi } from '../messaging/api';
+import { isUnauthorized } from '../messaging/MessagingProvider';
 function Button({ title, onPress, disabled = false }: { title: string; onPress: () => void; disabled?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[s.button, disabled && s.disabled]}><Text style={s.buttonText}>{title}</Text></Pressable>;
 }
@@ -22,6 +24,7 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
   const searchUsername = username.trim().replace(/^@/, '');
   const validUsername = usernameSearchSchema.safeParse({ username: searchUsername }).success;
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [inviteFeedback, setInviteFeedback] = useState<{ id: string; text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   const preferences = useQuery({ queryKey: [...key, 'preferences'], queryFn: () => peopleApi.preferences(token), enabled: Boolean(token), retry: false, gcTime: 0 });
@@ -48,6 +51,13 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
       else setInviteFeedback({ id, text: e instanceof Error ? e.message : 'Could not send the request. Please try again.', error: true });
     } finally { setSendingId(null); setBusy(false); }
   }
+  async function openConversation(id: string) {
+    if (openingId) return;
+    setOpeningId(id); setMessage('');
+    try { const conversation = await messagingApi.openDirect(token, id); router.push({ pathname: '/(app)/conversation/[id]', params: { id: conversation.id } }); }
+    catch (e) { if (isUnauthorized(e)) await auth.restoreSession().catch(() => undefined); else setMessage(e instanceof Error ? e.message : 'Could not open this conversation.'); }
+    finally { setOpeningId(null); }
+  }
   const allContacts = contacts.data?.pages.flatMap(page => page.people) ?? [];
   const allInvitations = invitations.data?.pages.flatMap(page => page.invitations) ?? [];
   const loading = preferences.isPending || contacts.isPending || invitations.isPending;
@@ -69,7 +79,7 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
         {results?.map(person => <View key={person.id} style={s.card}><Person person={person} />{allContacts.some(p => p.id === person.id) ? <Text style={s.caption}>Already in your contacts</Text> : allInvitations.some(i => i.person.id === person.id) ? <Text style={s.caption}>Request pending — open Requests to review it.</Text> : <Button title={sendingId === person.id ? 'Sending request…' : 'Send request'} disabled={busy || Boolean(error) || loading} onPress={() => void sendRequest(person.id)} />}{inviteFeedback?.id === person.id && <Text accessibilityRole={inviteFeedback.error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={inviteFeedback.error ? s.error : s.caption}>{inviteFeedback.text}</Text>}</View>)}
         <Text accessibilityRole="header" style={s.section}>Your contacts</Text>
         {!loading && !error && !allContacts.length && <Text style={s.caption}>No contacts yet. Find someone and send a request.</Text>}
-        {allContacts.map(person => <View key={person.id} style={s.card}><Person person={person} /></View>)}
+        {allContacts.map(person => <View key={person.id} style={s.card}><Person person={person} /><Button title={openingId === person.id ? 'Opening…' : 'Message'} disabled={Boolean(openingId)} onPress={() => void openConversation(person.id)} /></View>)}
         {contacts.hasNextPage && <Button title="Load more contacts" disabled={contacts.isFetchingNextPage} onPress={() => void contacts.fetchNextPage()} />}
       </>}
       {requests && <>

@@ -17,8 +17,10 @@ import { createSessionRouter } from './session-router.js';
 import { createSessionService } from './session-service.js';
 import { createProfileRouter } from './profile-router.js';
 import { createProfileService } from './profile-service.js';
+import { createMessagingRouter, type PublishConversationChange } from './messaging-router.js';
+import { createMessagingService, type MessagingService } from './messaging-service.js';
 
-type AppDependencies = Partial<Omit<AuthServiceDependencies, 'env'>> & { avatarStorage?: AvatarStorageProvider };
+type AppDependencies = Partial<Omit<AuthServiceDependencies, 'env'>> & { avatarStorage?: AvatarStorageProvider; messaging?: { service?: MessagingService; publish?: PublishConversationChange } };
 
 export function createApp(env: ApiEnv, dependencies?: AppDependencies) {
   const app = express();
@@ -46,6 +48,7 @@ export function createApp(env: ApiEnv, dependencies?: AppDependencies) {
   if (email instanceof MemoryEmailProvider) app.use('/dev', createDevInbox(email, { nodeEnv: env.NODE_ENV, enabled: env.DEV_INBOX_ENABLED, secret: env.DEV_INBOX_SECRET, ci: process.env.CI }));
   const auth = createAuthService({ env, email, blocklist: dependencies?.blocklist ?? new MemoryPasswordBlocklist(), now: dependencies?.now });
   app.use(/^\/api\/v1(?=\/(?:people|invitations)(?:\/|$))/, createPeopleRouter(auth, createPeopleService(dependencies?.now)));
+  app.use('/api/v1/conversations', createMessagingRouter(auth, dependencies?.messaging?.service ?? createMessagingService(dependencies?.now), dependencies?.messaging?.publish));
   app.use('/api/v1/sessions', createSessionRouter(auth, createSessionService(dependencies?.now)));
   app.use('/api/v1/auth', createAuthRouter(auth));
   app.use('/api/v1/profile', createProfileRouter(auth, createProfileService(dependencies?.avatarStorage ?? new MemoryAvatarStorage())));

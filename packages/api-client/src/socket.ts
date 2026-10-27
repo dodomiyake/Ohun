@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 
 export type CreateSocketClientOptions = {
   url: string;
+  token?: string;
 };
 
 /**
@@ -13,5 +14,9 @@ export function createSocketClient(options: CreateSocketClientOptions): Socket {
     autoConnect: false,
     withCredentials: true,
     transports: ['websocket', 'polling'],
+    ...(options.token ? { auth: { token: options.token } } : {}),
+    reconnection: true,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 30_000,
   });
 }

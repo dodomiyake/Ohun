@@ -12,6 +12,7 @@
       "bundleIdentifier": "com.ohun.app"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/brand/ohun-icon-light-1024.png",
         "backgroundColor": "#f8f9fd"
