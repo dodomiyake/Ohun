@@ -1,5 +1,5 @@
-import { useLocalSearchParams, router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useLocalSearchParams, router, useFocusEffect, useIsFocused } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
 import { MaterialSymbols_400Regular } from '@expo-google-fonts/material-symbols/400Regular';
@@ -36,30 +36,38 @@ export function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const conversationId = Array.isArray(id) ? id[0]! : id;
   const chat = useConversation(conversationId);
+  const isFocused = useIsFocused();
   const [iconsReady] = useFonts({ MaterialSymbolsUI: MaterialSymbols_400Regular });
   const [draft, setDraft] = useState('');
   const [nearBottom, setNearBottom] = useState(true);
   const list = useRef<FlatList<Message>>(null);
   const nearBottomRef = useRef(true);
   const initialScrollPending = useRef(false);
-  const initialLoadHandled = useRef(false);
+
+  useFocusEffect(useCallback(() => {
+    // Returning from another tab or screen should reopen this conversation at
+    // its newest message, even when the screen component stayed mounted.
+    initialScrollPending.current = true;
+    return () => { initialScrollPending.current = false; };
+  }, []));
 
   useEffect(() => {
-    if (chat.loading || initialLoadHandled.current) return;
-    initialLoadHandled.current = true;
-    if (chat.messages.length === 0) return;
+    if (!isFocused || !initialScrollPending.current || chat.loading) return;
+    if (chat.messages.length === 0) {
+      initialScrollPending.current = false;
+      return;
+    }
 
-    initialScrollPending.current = true;
-    // Wait for the first native layout pass; content-size changes below provide
-    // the primary scroll, while these frames cover already-cached short lists.
+    // Wait for native layout; content-size changes below provide the primary
+    // scroll, while these frames cover an already-rendered cached list.
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!initialScrollPending.current) return;
+      if (!initialScrollPending.current || !isFocused) return;
       list.current?.scrollToEnd({ animated: false });
       initialScrollPending.current = false;
       nearBottomRef.current = true;
       setNearBottom(true);
     }));
-  }, [chat.loading, chat.messages.length]);
+  }, [isFocused, chat.loading, chat.messages.length]);
 
   const handleContentSizeChange = () => {
     if (initialScrollPending.current) {
