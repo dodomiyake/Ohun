@@ -23,8 +23,10 @@ function Bubble({ message, mine, initial }: { message: Message; mine: boolean; i
   return <View style={[s.messageRow, mine && s.messageRowMine]}>
     {!mine && <View style={s.messageAvatar}><Text style={s.messageInitial}>{initial}</Text></View>}
     <View style={[s.messageGroup, mine && s.messageGroupMine]}>
-      <View style={[s.bubble, mine ? s.mine : s.theirs]}><Text style={[s.message, mine && s.ownMessage]}>{message.body}</Text></View>
-      <Text style={[s.time, mine && s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+      <View style={[s.bubble, mine ? s.mine : s.theirs]}>
+        <Text style={[s.message, mine && s.ownMessage]}>{message.body}</Text>
+        <Text style={[s.time, mine && s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+      </View>
     </View>
   </View>;
 }
@@ -177,10 +179,11 @@ export function ConversationScreen() {
           </>}
 
       <View style={s.composer}>
+        {iconsReady && <Pressable accessibilityRole="button" accessibilityLabel="Attachments coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAdd}><Text accessible={false} style={s.composerIcon}>add</Text></Pressable>}
         <View style={s.composerBar}>
-          {iconsReady && <Pressable accessibilityRole="button" accessibilityLabel="Attachments coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.composerIcon}>add</Text></Pressable>}
           <TextInput accessibilityLabel="Type a message" placeholder="Type a message…" multiline onFocus={() => { followKeyboardResize.current = nearBottomRef.current; }} onBlur={() => { followKeyboardResize.current = false; }} value={draft} onChangeText={setDraft} style={s.input} maxLength={8000} />
           {iconsReady && <Pressable accessibilityRole="button" accessibilityLabel="Emoji picker coming soon" accessibilityState={{ disabled: true }} disabled style={s.composerAction}><Text accessible={false} style={s.composerIcon}>mood</Text></Pressable>}
+        </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Send message"
@@ -189,7 +192,6 @@ export function ConversationScreen() {
             style={[s.send, !canSend && s.sendDisabled]}
             onPress={() => { const submitted = draft; void chat.send(submitted).then(() => setDraft(current => current === submitted ? '' : current)).catch(() => undefined); }}
           >{iconsReady ? <Text style={s.sendIcon}>send</Text> : null}</Pressable>
-        </View>
       </View>
     </KeyboardAvoidingView>
   </SafeAreaView>;
@@ -216,23 +218,24 @@ const s = StyleSheet.create({
   dateChip: { overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16, backgroundColor: colors.surfaceContainerLow, color: colors.onSurfaceVariant, fontSize: 12 },
   messageRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8, marginVertical: 4 },
   messageRowMine: { justifyContent: 'flex-end' },
-  messageAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  messageAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
   messageInitial: { fontSize: 13, fontWeight: '600', color: colors.primary },
   messageGroup: { maxWidth: '78%', alignItems: 'flex-start', gap: 4 },
   messageGroupMine: { alignItems: 'flex-end' },
-  bubble: { paddingHorizontal: 16, paddingVertical: 12, borderRadius: 20 },
-  mine: { backgroundColor: colors.primary, borderBottomRightRadius: 5 },
-  theirs: { backgroundColor: '#f2f3f5', borderBottomLeftRadius: 5 },
+  bubble: { paddingHorizontal: 14, paddingVertical: 11, borderRadius: 16, gap: 4 },
+  mine: { backgroundColor: colors.primary },
+  theirs: { backgroundColor: '#f3f4f7', borderWidth: 1, borderColor: '#e3e6ef' },
   message: { fontSize: 15, lineHeight: 22, color: colors.onSurface },
   ownMessage: { color: colors.onPrimary },
-  time: { fontSize: 11, color: colors.onSurfaceVariant, paddingHorizontal: 3 },
-  ownTime: { color: colors.onSurfaceVariant },
-  composer: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#ffffff' },
-  composerBar: { minHeight: 58, flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderRadius: 28, backgroundColor: '#f4f5f7' },
+  time: { fontSize: 11, color: colors.onSurfaceVariant, alignSelf: 'flex-start' },
+  ownTime: { color: '#dbe5ff', alignSelf: 'flex-end' },
+  composer: { paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#ffffff', flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  composerBar: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, borderRadius: 26, borderWidth: 1, borderColor: '#e3e6ef', backgroundColor: '#f7f8fa' },
+  composerAdd: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f2f3f6' },
   composerAction: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   composerIcon: { fontFamily: 'MaterialSymbolsUI', fontSize: 24, color: colors.onSurfaceVariant },
   input: { flex: 1, minHeight: 40, maxHeight: 128, paddingHorizontal: 4, paddingVertical: 9, fontSize: 14, color: colors.onSurface, backgroundColor: 'transparent' },
-  send: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
+  send: { width: 48, height: 48, borderRadius: 24, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' },
   sendDisabled: { opacity: 0.5 },
   sendIcon: { fontFamily: 'MaterialSymbolsUI', color: colors.onPrimary, fontSize: 20 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 24 },
