@@ -72,7 +72,16 @@ export function createMessagingService(now = () => new Date()) {
         if (!await allowed(chat.pairKey, session)) throw unavailable();
         const sequence = chat.nextSequence + 1;
         const [message] = await DirectMessage.create([{ conversationId: id, senderId: actor, ...request, sequence, createdAt: now() }], { session });
-        chat.nextSequence = sequence; chat.lastMessage = message!.toObject(); await chat.save({ session });
+        chat.nextSequence = sequence;
+        chat.lastMessage = {
+          conversationId: message!.conversationId,
+          senderId: message!.senderId,
+          clientMessageId: message!.clientMessageId,
+          body: message!.body,
+          sequence: message!.sequence,
+          createdAt: message!.createdAt,
+        };
+        await chat.save({ session });
         return { message: serializeMessage(message!), participantIds, created: true };
       });
     },
