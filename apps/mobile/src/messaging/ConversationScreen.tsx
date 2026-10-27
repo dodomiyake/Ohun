@@ -40,8 +40,37 @@ export function ConversationScreen() {
   const [draft, setDraft] = useState('');
   const [nearBottom, setNearBottom] = useState(true);
   const list = useRef<FlatList<Message>>(null);
+  const nearBottomRef = useRef(true);
+  const initialScrollPending = useRef(false);
+  const initialLoadHandled = useRef(false);
 
-  useEffect(() => { if (nearBottom) list.current?.scrollToEnd({ animated: true }); }, [chat.messages.length, nearBottom]);
+  useEffect(() => {
+    if (chat.loading || initialLoadHandled.current) return;
+    initialLoadHandled.current = true;
+    if (chat.messages.length === 0) return;
+
+    initialScrollPending.current = true;
+    // Wait for the first native layout pass; content-size changes below provide
+    // the primary scroll, while these frames cover already-cached short lists.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!initialScrollPending.current) return;
+      list.current?.scrollToEnd({ animated: false });
+      initialScrollPending.current = false;
+      nearBottomRef.current = true;
+      setNearBottom(true);
+    }));
+  }, [chat.loading, chat.messages.length]);
+
+  const handleContentSizeChange = () => {
+    if (initialScrollPending.current) {
+      list.current?.scrollToEnd({ animated: false });
+      initialScrollPending.current = false;
+      nearBottomRef.current = true;
+      setNearBottom(true);
+      return;
+    }
+    if (nearBottomRef.current) requestAnimationFrame(() => list.current?.scrollToEnd({ animated: true }));
+  };
 
   const sending = chat.pending.some(item => item.state === 'sending');
   const canSend = Boolean(draft.trim()) && [...draft].length <= 4000 && !sending;
@@ -84,14 +113,17 @@ export function ConversationScreen() {
                 </>;
               }}
               contentContainerStyle={s.messages}
+              onContentSizeChange={handleContentSizeChange}
               onScroll={event => {
                 const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                setNearBottom(contentSize.height - layoutMeasurement.height - contentOffset.y < 100);
+                const atBottom = contentSize.height - layoutMeasurement.height - contentOffset.y < 100;
+                nearBottomRef.current = atBottom;
+                setNearBottom(atBottom);
               }}
               scrollEventThrottle={100}
               ListEmptyComponent={<View style={s.center}><Text style={s.caption}>Start the conversation</Text></View>}
             />
-            {!nearBottom && <Pressable accessibilityRole="button" onPress={() => list.current?.scrollToEnd({ animated: true })} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
+            {!nearBottom && <Pressable accessibilityRole="button" onPress={() => { nearBottomRef.current = true; setNearBottom(true); list.current?.scrollToEnd({ animated: true }); }} style={s.newMessages}><Text style={s.retryText}>New messages ↓</Text></Pressable>}
             {chat.pending.map(item => <View key={item.clientMessageId} style={s.pending}><Text style={s.caption}>{item.body}</Text><Text style={s.caption}>{item.state === 'sending' ? 'Sending…' : 'Could not send'}</Text>{item.state === 'failed' && <Pressable accessibilityRole="button" onPress={() => void chat.retry(item.clientMessageId).catch(() => undefined)}><Text style={s.retryText}>Retry</Text></Pressable>}</View>)}
           </>}
 
