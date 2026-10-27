@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Ohun",
+    "name": "Nlẹ́",
     "slug": "ohun",
     "version": "2.0.0",
     "orientation": "portrait",
@@ -37,7 +37,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow Ohun to access a photo you choose for your profile.",
+          "photosPermission": "Allow Nlẹ́ to access a photo you choose for your profile.",
           "microphonePermission": false
         }
       ]
