@@ -16,7 +16,7 @@ export default function ForgotPasswordScreen() {
     finally { setBusy(false); }
   };
 
-  return <AuthFrame title="Reset your password" description="Enter the email address connected to your Ohun account.">
+  return <AuthFrame title="Reset your password" description="Enter the email address connected to your Nlẹ́ account.">
     {sent ? <Text style={authStyles.notice} accessibilityLiveRegion="polite">If an account exists for that email, reset instructions have been sent.</Text> : null}
     {error ? <Text style={authStyles.error} accessibilityLiveRegion="polite">{error}</Text> : null}
     <Text style={authStyles.label}>Email address</Text>
