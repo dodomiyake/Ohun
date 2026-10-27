@@ -4,6 +4,8 @@ const sequence = z.number().int().min(1).max(Number.MAX_SAFE_INTEGER);
 const body = z.string().refine(value => value.trim().length > 0 && [...value].length <= 4000, 'Use 1–4000 characters.');
 export const openDirectRequestSchema = z.object({ contactId: personIdSchema }).strict();
 export const sendMessageRequestSchema = z.object({ clientMessageId: z.string().uuid(), body }).strict();
+export const receiptRequestSchema = z.object({ messageIds: z.array(personIdSchema).min(1).max(50), state: z.enum(['delivered', 'read']) }).strict();
+export type ReceiptRequest = z.infer<typeof receiptRequestSchema>;
 export const messageSchema = z.object({ id: personIdSchema, conversationId: personIdSchema, senderId: personIdSchema, clientMessageId: z.string().uuid(), body, sequence, createdAt: z.string().datetime() }).strict();
 export const conversationSchema = z.object({ id: personIdSchema, person: publicPersonSchema, canSend: z.boolean(), lastMessage: messageSchema.nullable() }).strict();
 export const conversationPageSchema = z.object({ conversations: z.array(conversationSchema).max(50), nextCursor: z.string().max(256).nullable() }).strict();
