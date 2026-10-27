@@ -78,17 +78,23 @@ export function ConversationScreen() {
     };
   }, [focusCycle, chat.loading, chat.messages.length]);
 
+  const scheduleScrollToLatest = (animated = false) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (!initialScrollPending.current && !nearBottomRef.current) return;
+      list.current?.scrollToEnd({ animated });
+      nearBottomRef.current = true;
+      setNearBottom(true);
+    }));
+  };
+
+  const handleListLayout = () => {
+    if (initialScrollPending.current) scheduleScrollToLatest(false);
+  };
+
   const handleContentSizeChange = () => {
-    if (initialScrollPending.current) {
-      requestAnimationFrame(() => requestAnimationFrame(() => {
-        if (!initialScrollPending.current) return;
-        list.current?.scrollToEnd({ animated: false });
-        nearBottomRef.current = true;
-        setNearBottom(true);
-      }));
-      return;
+    if (initialScrollPending.current || nearBottomRef.current) {
+      scheduleScrollToLatest(nearBottomRef.current && !initialScrollPending.current);
     }
-    if (nearBottomRef.current) requestAnimationFrame(() => requestAnimationFrame(() => list.current?.scrollToEnd({ animated: true })));
   };
 
   const sending = chat.pending.some(item => item.state === 'sending');
@@ -121,6 +127,8 @@ export function ConversationScreen() {
             {chat.hasOlder && <Pressable accessibilityRole="button" onPress={() => void chat.loadOlder()} style={s.older}><Text style={s.retryText}>Load earlier messages</Text></Pressable>}
             <FlatList
               ref={list}
+              style={s.list}
+              onLayout={handleListLayout}
               data={chat.messages}
               keyExtractor={item => item.id}
               renderItem={({ item, index }) => {
@@ -180,7 +188,8 @@ const s = StyleSheet.create({
   actions: { flexDirection: 'row', alignItems: 'center' },
   headerAction: { width: 36, height: 44, alignItems: 'center', justifyContent: 'center' },
   icon: { fontFamily: 'MaterialSymbolsUI', fontSize: 22, color: colors.onSurfaceVariant },
-  messages: { paddingHorizontal: 16, paddingVertical: 18, gap: 10, flexGrow: 1, justifyContent: 'flex-end' },
+  list: { flex: 1 },
+  messages: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 28, gap: 10, flexGrow: 1, justifyContent: 'flex-end' },
   dateRow: { alignItems: 'center', marginBottom: 8 },
   dateChip: { overflow: 'hidden', paddingHorizontal: 14, paddingVertical: 5, borderRadius: 16, backgroundColor: colors.surfaceContainerLow, color: colors.onSurfaceVariant, fontSize: 12 },
   bubble: { maxWidth: '82%', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, gap: 4 },
