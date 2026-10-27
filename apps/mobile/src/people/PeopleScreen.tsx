@@ -9,6 +9,8 @@ import { useAuth } from '../auth/AuthProvider';
 import { ApiError } from '../auth/api';
 import { AppNav } from '../shells/AppNav';
 import { peopleApi } from './api';
+import { messagingApi } from '../messaging/api';
+import { isUnauthorized } from '../messaging/MessagingProvider';
 function Button({ title, onPress, disabled = false }: { title: string; onPress: () => void; disabled?: boolean }) {
   return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled} onPress={onPress} style={[s.button, disabled && s.disabled]}><Text style={s.buttonText}>{title}</Text></Pressable>;
 }
@@ -22,6 +24,7 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
   const searchUsername = username.trim().replace(/^@/, '');
   const validUsername = usernameSearchSchema.safeParse({ username: searchUsername }).success;
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [inviteFeedback, setInviteFeedback] = useState<{ id: string; text: string; error: boolean } | null>(null);
   const [busy, setBusy] = useState(false); const [message, setMessage] = useState('');
   const preferences = useQuery({ queryKey: [...key, 'preferences'], queryFn: () => peopleApi.preferences(token), enabled: Boolean(token), retry: false, gcTime: 0 });
@@ -48,11 +51,18 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
       else setInviteFeedback({ id, text: e instanceof Error ? e.message : 'Could not send the request. Please try again.', error: true });
     } finally { setSendingId(null); setBusy(false); }
   }
+  async function openConversation(id: string) {
+    if (openingId) return;
+    setOpeningId(id); setMessage('');
+    try { const conversation = await messagingApi.openDirect(token, id); router.push({ pathname: '/(app)/conversation/[id]', params: { id: conversation.id } }); }
+    catch (e) { if (isUnauthorized(e)) await auth.restoreSession().catch(() => undefined); else setMessage(e instanceof Error ? e.message : 'Could not open this conversation.'); }
+    finally { setOpeningId(null); }
+  }
   const allContacts = contacts.data?.pages.flatMap(page => page.people) ?? [];
   const allInvitations = invitations.data?.pages.flatMap(page => page.invitations) ?? [];
   const loading = preferences.isPending || contacts.isPending || invitations.isPending;
   return <SafeAreaView style={s.safe}>
-    <View style={s.header}><Text style={s.brand}>Ohun</Text><Text style={s.caption}>{requests ? 'Requests' : 'People'}</Text></View>
+    <View style={s.header}><Text style={s.caption}>{requests ? 'Requests' : 'People'}</Text></View>
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={s.content}>
       <Text accessibilityRole="header" style={s.title}>{requests ? 'Contact requests' : 'Find People'}</Text>
       <Text style={s.caption}>{requests ? 'Accept a request to add each other as contacts. Ignoring a request does not notify the sender.' : 'Search for friends and family by their exact username.'}</Text>
@@ -69,7 +79,7 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
         {results?.map(person => <View key={person.id} style={s.card}><Person person={person} />{allContacts.some(p => p.id === person.id) ? <Text style={s.caption}>Already in your contacts</Text> : allInvitations.some(i => i.person.id === person.id) ? <Text style={s.caption}>Request pending — open Requests to review it.</Text> : <Button title={sendingId === person.id ? 'Sending request…' : 'Send request'} disabled={busy || Boolean(error) || loading} onPress={() => void sendRequest(person.id)} />}{inviteFeedback?.id === person.id && <Text accessibilityRole={inviteFeedback.error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={inviteFeedback.error ? s.error : s.caption}>{inviteFeedback.text}</Text>}</View>)}
         <Text accessibilityRole="header" style={s.section}>Your contacts</Text>
         {!loading && !error && !allContacts.length && <Text style={s.caption}>No contacts yet. Find someone and send a request.</Text>}
-        {allContacts.map(person => <View key={person.id} style={s.card}><Person person={person} /></View>)}
+        {allContacts.map(person => <Pressable key={person.id} accessibilityRole="button" accessibilityLabel={`Message ${person.displayName}`} accessibilityState={{ disabled: Boolean(openingId) }} disabled={Boolean(openingId)} onPress={() => void openConversation(person.id)} style={({ pressed }) => [s.card, s.contactCard, pressed && !openingId && s.contactPressed, Boolean(openingId) && s.contactDisabled]}><Person person={person} /><View style={s.messageAction}><Text style={s.messageActionText}>{openingId === person.id ? 'Opening conversation…' : 'Open conversation'}</Text></View></Pressable>)}
         {contacts.hasNextPage && <Button title="Load more contacts" disabled={contacts.isFetchingNextPage} onPress={() => void contacts.fetchNextPage()} />}
       </>}
       {requests && <>
@@ -83,5 +93,5 @@ export default function PeopleScreen({ requests = false }: { requests?: boolean 
   </SafeAreaView>;
 }
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background }, header: { minHeight: 64, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, brand: { fontFamily: typography.fontFamilyBrandNative, color: colors.primary, fontSize: 24 }, content: { padding: 16, gap: 16, width: '100%', maxWidth: 528, alignSelf: 'center', paddingBottom: 32 }, title: { fontSize: 28, fontWeight: '700', color: colors.onSurface }, section: { fontSize: 20, fontWeight: '600', color: colors.onSurface }, caption: { fontSize: 14, lineHeight: 21, color: colors.onSurfaceVariant }, card: { borderWidth: 1, borderColor: colors.outlineVariant, borderRadius: 12, padding: 16, gap: 16 }, person: { flexDirection: 'row', alignItems: 'center', gap: 16 }, identity: { flex: 1, gap: 4 }, name: { fontSize: 16, color: colors.onSurface }, avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center' }, initial: { fontSize: 24, color: colors.primary }, input: { minHeight: 56, backgroundColor: '#f2f3f7', borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: colors.onSurface }, button: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }, buttonText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' }, disabled: { opacity: 0.5 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, group: { gap: 16 }, error: { color: colors.error },
+  safe: { flex: 1, backgroundColor: colors.background }, header: { minHeight: 64, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, brand: { fontFamily: typography.fontFamilyBrandNative, color: colors.primary, fontSize: 24 }, content: { padding: 16, gap: 16, width: '100%', maxWidth: 528, alignSelf: 'center', paddingBottom: 32 }, title: { fontSize: 28, fontWeight: '700', color: colors.onSurface }, section: { fontSize: 20, fontWeight: '600', color: colors.onSurface }, caption: { fontSize: 14, lineHeight: 21, color: colors.onSurfaceVariant }, card: { borderWidth: 1, borderColor: colors.outlineVariant, borderRadius: 12, padding: 16, gap: 16 }, contactCard: { backgroundColor: colors.surface }, contactPressed: { borderColor: colors.primary, backgroundColor: colors.surfaceContainerLow }, contactDisabled: { opacity: 0.65 }, messageAction: { minHeight: 40, alignSelf: 'flex-start', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 20, backgroundColor: colors.primary }, messageActionText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' }, person: { flexDirection: 'row', alignItems: 'center', gap: 16 }, identity: { flex: 1, gap: 4 }, name: { fontSize: 16, color: colors.onSurface }, avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.secondaryContainer, alignItems: 'center', justifyContent: 'center' }, initial: { fontSize: 24, color: colors.primary }, input: { minHeight: 56, backgroundColor: '#f2f3f7', borderRadius: 12, paddingHorizontal: 16, fontSize: 16, color: colors.onSurface }, button: { minHeight: 44, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 24, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center' }, buttonText: { color: colors.onPrimary, fontSize: 14, fontWeight: '600' }, disabled: { opacity: 0.5 }, actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 }, group: { gap: 16 }, error: { color: colors.error },
 });

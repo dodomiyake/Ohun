@@ -1,3 +1,4 @@
+import { lockRelationshipParticipants as lock } from './relationship-locks.js';
 import mongoose, { type ClientSession } from 'mongoose';
 import { discoveryPreferencesSchema, invitationActionSchema, invitationRequestSchema, personIdSchema, usernameSearchSchema, type PublicPerson } from '@ohun/contracts';
 import { AuthError } from './auth-service.js';
@@ -7,12 +8,6 @@ import { INVITATION_LIFETIME_MS, personPairKey } from './people-policy.js';
 const unavailable = () => new AuthError(404, 'person_unavailable', 'This request is unavailable.');
 
 export function createPeopleService(now = () => new Date()) {
-  // Every privacy/relationship mutation writes participant locks in the same order.
-  async function lock(ids: string[], session: ClientSession) {
-    for (const id of [...new Set(ids)].sort()) {
-      if (!(await User.updateOne({ _id: id, emailVerifiedAt: { $ne: null } }, { $inc: { __v: 1 } }, { session })).matchedCount) throw unavailable();
-    }
-  }
   async function blocked(pairKey: string, session?: ClientSession) { return Boolean(await PersonBlock.findOne({ pairKey }).session(session ?? null)); }
   async function person(id: string, session?: ClientSession): Promise<PublicPerson | null> {
     const user = await User.findOne({ _id: id, emailVerifiedAt: { $ne: null } }).session(session ?? null);

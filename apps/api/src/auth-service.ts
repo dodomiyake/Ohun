@@ -64,7 +64,7 @@ export function createAuthService({ env, email, blocklist, now: getNow = () => n
       codeExpiresAt: new Date(now.getTime() + env.EMAIL_VERIFICATION_CODE_TTL_SECONDS * 1000),
       expiresAt: new Date(now.getTime() + env.EMAIL_VERIFICATION_LINK_TTL_SECONDS * 1000),
     });
-    await email.send({ to: address, subject: 'Verify your Ohun account', text: `Verification code: ${code}\nVerification token: ${link}` });
+    await email.send({ to: address, subject: 'Verify your Nlẹ́ account', text: `Verification code: ${code}\nVerification token: ${link}` });
   }
 
   async function register(input: RegisterRequest) {
@@ -189,7 +189,7 @@ export function createAuthService({ env, email, blocklist, now: getNow = () => n
     const rawToken = opaqueToken();
     await PasswordResetToken.updateMany({ userId: user._id, usedAt: null }, { $set: { usedAt: now } });
     await PasswordResetToken.create({ userId: user._id, tokenHash: tokenHash(hmacMaster, 'reset', rawToken), expiresAt: new Date(now.getTime() + env.PASSWORD_RESET_TTL_SECONDS * 1000) });
-    await email.send({ to: user.email, subject: 'Reset your Ohun password', text: `Open Ohun to reset your password: ohun://reset-password?token=${rawToken}` });
+    await email.send({ to: user.email, subject: 'Reset your Nlẹ́ password', text: `Open Nlẹ́ to reset your password: ohun://reset-password?token=${rawToken}` });
     return { ok: true as const };
   }
 

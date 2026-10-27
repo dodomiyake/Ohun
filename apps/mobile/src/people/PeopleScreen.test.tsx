@@ -5,16 +5,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import PeopleScreen from './PeopleScreen';
 const api = vi.hoisted(() => ({ preferences: vi.fn(), setPreferences: vi.fn(), contacts: vi.fn(), invitations: vi.fn(), search: vi.fn(), invite: vi.fn(), action: vi.fn() }));
+const messaging = vi.hoisted(() => ({ openDirect: vi.fn() }));
+const route = vi.hoisted(() => ({ push: vi.fn(), replace: vi.fn() }));
 vi.mock('./api', () => ({ peopleApi: api }));
+vi.mock('../messaging/api', () => ({ messagingApi: messaging }));
 vi.mock('../auth/AuthProvider', () => ({ useAuth: () => ({ accessToken: 'test', user: { id: 'me', username: 'alice' }, signOutLocal: vi.fn() }) }));
 vi.mock('../shells/AppNav', () => ({ AppNav: () => <div>Navigation</div> }));
-vi.mock('expo-router', () => ({ useFocusEffect: () => undefined, router: { replace: vi.fn() } }));
+vi.mock('expo-router', () => ({ useFocusEffect: () => undefined, router: route }));
 vi.mock('react-native', () => ({
   StyleSheet: { create: (v: unknown) => v },
   View: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   ScrollView: ({ children }: React.PropsWithChildren) => <div>{children}</div>,
   Text: ({ children }: React.PropsWithChildren) => <span>{children}</span>,
-  Pressable: ({ children, onPress, disabled }: React.PropsWithChildren<{ onPress?: () => void; disabled?: boolean }>) => <button disabled={disabled} onClick={onPress}>{children}</button>,
+  Pressable: ({ children, onPress, disabled, accessibilityLabel }: React.PropsWithChildren<{ onPress?: () => void; disabled?: boolean; accessibilityLabel?: string }>) => <button disabled={disabled} aria-label={accessibilityLabel} onClick={onPress}>{children}</button>,
   Switch: ({ value, onValueChange, disabled }: { value: boolean; onValueChange: (v: boolean) => void; disabled: boolean }) => <input type="checkbox" checked={value} disabled={disabled} onChange={() => onValueChange(!value)} />,
   TextInput: ({ value, onChangeText }: { value: string; onChangeText: (v: string) => void }) => <input value={value} onInput={e => onChangeText(e.currentTarget.value)} />,
 }));
@@ -22,7 +25,7 @@ vi.mock('react-native-safe-area-context', () => ({ SafeAreaView: ({ children }: 
 let root: Root; let host: HTMLDivElement; let client: QueryClient;
 const person = { id: '507f1f77bcf86cd799439011', username: 'bobby', displayName: 'Bobby' };
 beforeEach(() => {
-  vi.clearAllMocks(); api.preferences.mockResolvedValue({ byUsername: false }); api.contacts.mockResolvedValue({ people: [], nextCursor: null }); api.invitations.mockResolvedValue({ invitations: [], nextCursor: null }); api.setPreferences.mockResolvedValue({ byUsername: true }); api.invite.mockResolvedValue({ ok: true }); api.action.mockResolvedValue({ ok: true });
+  vi.clearAllMocks(); api.preferences.mockResolvedValue({ byUsername: false }); api.contacts.mockResolvedValue({ people: [], nextCursor: null }); api.invitations.mockResolvedValue({ invitations: [], nextCursor: null }); api.setPreferences.mockResolvedValue({ byUsername: true }); api.invite.mockResolvedValue({ ok: true }); api.action.mockResolvedValue({ ok: true }); messaging.openDirect.mockResolvedValue({ id: 'conversation-1' });
 });
 afterEach(async () => { await act(async () => root?.unmount()); host?.remove(); client?.clear(); });
 async function settle() { await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); }); }
@@ -47,6 +50,13 @@ it('shows accept and ignore for incoming requests and only cancel for outgoing',
   await click('Ignore'); expect(api.action).toHaveBeenCalledWith('test', 'incoming', 'ignore');
   await click('Cancel'); expect(api.action).toHaveBeenCalledWith('test', 'outgoing', 'cancel');
 });
+it('opens an accepted contact when its full contact card is tapped', async () => {
+  api.contacts.mockResolvedValue({ people: [person], nextCursor: null });
+  await mount(); const contact = host.querySelector('button[aria-label="Message Bobby"]'); expect(contact).toBeDefined();
+  await act(async () => { (contact as HTMLButtonElement).click(); }); await settle();
+  expect(messaging.openDirect).toHaveBeenCalledWith('test', person.id);
+  expect(route.push).toHaveBeenCalledWith({ pathname: '/(app)/conversation/[id]', params: { id: 'conversation-1' } });
+});
 it('renders request errors with retry instead of an empty success state', async () => {
   api.invitations.mockRejectedValue(new Error('Connection unavailable')); await mount(true);
   expect(host.textContent).toContain('Connection unavailable'); expect(host.textContent).not.toContain('No incoming requests');
@@ -62,10 +72,10 @@ it('shows sending and failure next to the recipient and allows a retry', async (
   await click('Search'); await click('Send request');
   const sending = [...host.querySelectorAll('button')].find(b => b.textContent === 'Sending request…');
   expect(sending?.disabled).toBe(true);
-  await act(async () => rejectInvite(new Error('Ohun did not respond. Please try again.'))); await settle();
+  await act(async () => rejectInvite(new Error('The app did not respond. Please try again.'))); await settle();
   const send = [...host.querySelectorAll('button')].find(b => b.textContent === 'Send request')!;
   expect(send.disabled).toBe(false);
-  expect(send.parentElement?.textContent).toContain('Ohun did not respond. Please try again.');
+  expect(send.parentElement?.textContent).toContain('The app did not respond. Please try again.');
   await click('Send request');
   expect(send.parentElement?.textContent).toContain('Request submitted. Open Contact requests to check its status.');
 });

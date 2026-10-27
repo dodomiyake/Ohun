@@ -15,18 +15,18 @@ async function parse(response: Response) {
 }
 
 async function request(path: string, accessToken: string, init?: RequestInit) {
-  if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+  if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to the server.');
   try { return await fetch(`${apiBaseUrl}${path}`, { ...init, headers: { Authorization: `Bearer ${accessToken}`, ...init?.headers } }); }
   catch { throw new ApiError('offline', 'Check your internet connection and try again.'); }
 }
 
 export async function downloadAvatar(accessToken: string, signal?: AbortSignal) {
-  if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+  if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to the server.');
   const { File, Paths } = await import('expo-file-system');
   const { fetch: imageFetch } = await import('expo/fetch');
   let response: Response;
   try { response = await imageFetch(`${apiBaseUrl}/api/v1/profile/avatar`, { headers: { Authorization: `Bearer ${accessToken}` }, signal }); }
-  catch { throw new ApiError('photo_download_failed', 'Your profile was saved, but the photo could not be downloaded. Check the connection to Ohun and reopen your profile.'); }
+  catch { throw new ApiError('photo_download_failed', 'Your profile was saved, but the photo could not be downloaded. Check the connection to the server and reopen your profile.'); }
   if (response.status === 404) throw new ApiError('photo_missing', 'The server no longer has this photo. Upload it again; restarting the development API clears photos.', 404);
   if (response.status === 401) throw new ApiError('session_expired', 'Sign in again to load your profile photo.', 401);
   if (!response.ok) throw new ApiError('photo_download_failed', `The server could not load your photo (HTTP ${response.status}).`, response.status);
@@ -46,7 +46,7 @@ export const nativeProfileApi = {
     return parse(await request('/api/v1/profile', accessToken, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }));
   },
   async uploadAvatar(accessToken: string, asset: { uri: string; mimeType?: string | null; fileName?: string | null }) {
-    if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to Ohun.');
+    if (!apiBaseUrl) throw new ApiError('configuration_error', 'The app is not configured to connect to the server.');
     const { File } = await import('expo-file-system');
     const { fetch: uploadFetch } = await import('expo/fetch');
     const file = new File(asset.uri);
@@ -60,7 +60,7 @@ export const nativeProfileApi = {
     try {
       response = await uploadFetch(`${apiBaseUrl}/api/v1/profile/avatar`, { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body: form });
     } catch {
-      throw new ApiError('upload_failed', 'The photo could not be sent. Try a smaller photo saved on this device, and check that Ohun can reach the server.');
+      throw new ApiError('upload_failed', 'The photo could not be sent. Try a smaller photo saved on this device, and check that the app can reach the server.');
     }
     return parse(response);
   },

@@ -49,7 +49,7 @@ export default function DevicesScreen() {
     <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={devices.isRefetching} onRefresh={() => void devices.refetch()} />}>
       <Pressable accessibilityRole="button" accessibilityLabel="Back to settings" style={styles.button} onPress={() => router.back()}><Text style={styles.link}>Back</Text></Pressable>
       <Text accessibilityRole="header" style={styles.title}>Active devices</Text>
-      <Text style={styles.description}>Review where you’re signed in to Ohun. Activity times are approximate.</Text>
+      <Text style={styles.description}>Review where you’re signed in. Activity times are approximate.</Text>
       {notice ? <Text accessibilityLiveRegion="polite" style={styles.description}>{notice}</Text> : null}
       {error ? <View style={styles.card}><Text accessibilityRole="alert" style={styles.error}>{error.message}</Text><Pressable accessibilityRole="button" style={styles.button} onPress={() => { revoke.reset(); void devices.refetch(); }}><Text style={styles.link}>Try again</Text></Pressable></View> : null}
       {devices.isPending ? <ActivityIndicator accessibilityLabel="Loading active devices" color={colors.primary} /> : null}

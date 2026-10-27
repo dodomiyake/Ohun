@@ -36,7 +36,7 @@ export default function SettingsScreen() {
     catch { router.replace({ pathname: '/(auth)/login', params: { logoutPending: 'true' } }); }
   };
   return <SafeAreaView style={styles.safeArea}>
-    <View style={styles.header}><Text style={styles.brand}>Ohun</Text><Text accessibilityRole="header" style={styles.description}>Settings</Text></View>
+    <View style={styles.header}><Text accessibilityRole="header" style={styles.description}>Settings</Text></View>
     <ScrollView contentContainerStyle={styles.content}>
       <View style={styles.profileCard}>
         {photo ? <Image source={{ uri: photo }} style={styles.avatar} onError={() => setPhoto(null)} accessibilityLabel="Your profile photo" /> : <View style={[styles.avatar, styles.initials]}><Text style={styles.initialText}>{name.split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()}</Text></View>}
@@ -55,7 +55,7 @@ export default function SettingsScreen() {
         <SettingRow ready={ready} title="Help center" icon="help" />
       </View></View>
       <Pressable style={styles.logout} disabled={busy} onPress={() => void signOut()} accessibilityRole="button" accessibilityState={{ busy, disabled: busy }}><Text style={styles.logoutText}>{busy ? 'Signing out…' : 'Sign out'}</Text>{ready ? <Text style={[styles.icon, { color: colors.error }]} accessible={false}>{glyphs.logout}</Text> : null}</Pressable>
-      <Text style={styles.footer}>Ohun</Text>
+      
     </ScrollView>
     <AppNav active="Settings" />
   </SafeAreaView>;
