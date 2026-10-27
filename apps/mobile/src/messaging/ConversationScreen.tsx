@@ -10,7 +10,9 @@ export function ConversationScreen(){
  const {id}=useLocalSearchParams<{id:string}>();const conversationId=Array.isArray(id)?id[0]!:id;const chat=useConversation(conversationId);const insets=useSafeAreaInsets();const [draft,setDraft]=useState('');const [nearBottom,setNearBottom]=useState(true);const list=useRef<FlatList<Message>>(null);
  useEffect(()=>{if(nearBottom)list.current?.scrollToEnd({animated:true});},[chat.messages.length,nearBottom]);
  const sending=chat.pending.some(item=>item.state==='sending');const canSend=Boolean(draft.trim())&&[...draft].length<=4000&&!sending;
- return <SafeAreaView edges={['top','left','right']} style={s.safe}><KeyboardAvoidingView style={s.flex} behavior={Platform.OS==='ios'?'padding':undefined}>
+ // Android's Expo window uses adjustResize; height behavior keeps the composer in the
+ // resized viewport when the software keyboard opens.
+ return <SafeAreaView edges={['top','left','right']} style={s.safe}><KeyboardAvoidingView style={s.flex} behavior={Platform.OS==='ios'?'padding':'height'}>
   <View style={s.header}><Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={()=>router.back()} style={s.back}><Text style={s.backGlyph}>‹</Text></Pressable><View style={s.avatar}><Text style={s.initial}>{chat.conversation?.person?.displayName.slice(0,1).toUpperCase()??'?'}</Text></View><View style={s.identity}><Text numberOfLines={1} style={s.name}>{chat.conversation?.person?.displayName??'Conversation'}</Text><Text style={s.handle}>{chat.conversation?.person?`@${chat.conversation.person.username}`:' '}</Text></View></View>
   {chat.loading?<View style={s.center}><ActivityIndicator color={colors.primary}/><Text style={s.caption}>Loading messages…</Text></View>:chat.error?<View style={s.center}><Text accessibilityRole="alert" style={s.caption}>Could not load this conversation.</Text><Pressable accessibilityRole="button" style={s.retry} onPress={()=>void chat.refresh()}><Text style={s.retryText}>Retry</Text></Pressable></View>:<>
    {!chat.conversation?.canSend&&<Text accessibilityLiveRegion="polite" style={s.notice}>You can view this conversation, but sending is unavailable.</Text>}
