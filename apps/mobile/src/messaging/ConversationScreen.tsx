@@ -1,4 +1,4 @@
-import { useLocalSearchParams, router, useFocusEffect, useIsFocused } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
@@ -36,10 +36,10 @@ export function ConversationScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const conversationId = Array.isArray(id) ? id[0]! : id;
   const chat = useConversation(conversationId);
-  const isFocused = useIsFocused();
   const [iconsReady] = useFonts({ MaterialSymbolsUI: MaterialSymbols_400Regular });
   const [draft, setDraft] = useState('');
   const [nearBottom, setNearBottom] = useState(true);
+  const [focusCycle, setFocusCycle] = useState(0);
   const list = useRef<FlatList<Message>>(null);
   const nearBottomRef = useRef(true);
   const initialScrollPending = useRef(false);
@@ -48,11 +48,12 @@ export function ConversationScreen() {
     // Returning from another tab or screen should reopen this conversation at
     // its newest message, even when the screen component stayed mounted.
     initialScrollPending.current = true;
+    setFocusCycle(cycle => cycle + 1);
     return () => { initialScrollPending.current = false; };
   }, []));
 
   useEffect(() => {
-    if (!isFocused || !initialScrollPending.current || chat.loading) return;
+    if (!initialScrollPending.current || chat.loading) return;
     if (chat.messages.length === 0) {
       initialScrollPending.current = false;
       return;
@@ -61,13 +62,13 @@ export function ConversationScreen() {
     // Wait for native layout; content-size changes below provide the primary
     // scroll, while these frames cover an already-rendered cached list.
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (!initialScrollPending.current || !isFocused) return;
+      if (!initialScrollPending.current) return;
       list.current?.scrollToEnd({ animated: false });
       initialScrollPending.current = false;
       nearBottomRef.current = true;
       setNearBottom(true);
     }));
-  }, [isFocused, chat.loading, chat.messages.length]);
+  }, [focusCycle, chat.loading, chat.messages.length]);
 
   const handleContentSizeChange = () => {
     if (initialScrollPending.current) {
