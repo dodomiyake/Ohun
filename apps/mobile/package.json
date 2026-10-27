@@ -16,6 +16,7 @@
     "validate:bundles": "expo export --platform android --platform ios --output-dir dist/native-validation"
   },
   "dependencies": {
+    "@expo-google-fonts/material-symbols": "^0.4.42",
     "@expo-google-fonts/nunito": "^0.4.2",
     "@ohun/api-client": "*",
     "@ohun/contracts": "*",
