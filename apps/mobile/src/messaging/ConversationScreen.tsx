@@ -1,12 +1,13 @@
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useFonts } from 'expo-font';
-import type { LayoutChangeEvent } from 'react-native';
+import type { LayoutChangeEvent, ViewToken } from 'react-native';
 import { MaterialSymbols_400Regular } from '@expo-google-fonts/material-symbols/400Regular';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@ohun/design-tokens';
 import { useConversation } from './useConversation';
+import { receiptCandidates } from './receipts';
 import type { Message } from '@ohun/contracts';
 
 function dayLabel(value: string) {
@@ -19,13 +20,17 @@ function dayLabel(value: string) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric', year: date.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
 }
 
-function Bubble({ message, mine, initial }: { message: Message; mine: boolean; initial: string }) {
+function Bubble({ message, mine, initial, iconsReady }: { message: Message; mine: boolean; initial: string; iconsReady: boolean }) {
+  const status = message.deliveryStatus ?? 'sent';
   return <View style={[s.messageRow, mine && s.messageRowMine]}>
     {!mine && <View style={s.messageAvatar}><Text style={s.messageInitial}>{initial}</Text></View>}
     <View style={[s.messageGroup, mine && s.messageGroupMine]}>
       <View style={[s.bubble, mine ? s.mine : s.theirs]}>
         <Text style={[s.message, mine && s.ownMessage]}>{message.body}</Text>
-        <Text style={[s.time, mine && s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+        <View style={[s.metadata, mine && s.ownMetadata]}>
+          <Text style={[s.time, mine && s.ownTime]}>{new Date(message.createdAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</Text>
+          {mine && <Text accessibilityLabel={`Message ${status}`} style={[s.receipt, status === 'read' && s.receiptRead, iconsReady && s.receiptIcon]}>{iconsReady ? (status === 'sent' ? 'done' : 'done_all') : (status === 'sent' ? '✓' : '✓✓')}</Text>}
+        </View>
       </View>
     </View>
   </View>;
@@ -45,6 +50,17 @@ export function ConversationScreen() {
   const [draft, setDraft] = useState('');
   const [nearBottom, setNearBottom] = useState(true);
   const [focusCycle, setFocusCycle] = useState(0);
+  const [focused, setFocused] = useState(false);
+  const [active, setActive] = useState(AppState.currentState === 'active');
+  const [visible, setVisible] = useState<Set<string>>(new Set());
+  const [receiptCycle, setReceiptCycle] = useState(0);
+  const receiptDone = useRef({ delivered: new Set<string>(), read: new Set<string>() });
+  const receiptPending = useRef({ delivered: new Set<string>(), read: new Set<string>() });
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ViewToken[] }) => {
+    const next = new Set(viewableItems.filter(item => item.isViewable).map(item => (item.item as Message).id));
+    setVisible(current => current.size === next.size && [...next].every(id => current.has(id)) ? current : next);
+  }).current;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 1, minimumViewTime: 500 }).current;
   const list = useRef<FlatList<Message>>(null);
   const nearBottomRef = useRef(true);
   const initialScrollPending = useRef(false);
@@ -56,9 +72,36 @@ export function ConversationScreen() {
     // Returning from another tab or screen should reopen this conversation at
     // its newest message, even when the screen component stayed mounted.
     initialScrollPending.current = true;
+    setFocused(true);
     setFocusCycle(cycle => cycle + 1);
-    return () => { initialScrollPending.current = false; };
+    return () => { initialScrollPending.current = false; setFocused(false); };
   }, []));
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', state => setActive(state === 'active'));
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    receiptDone.current = { delivered: new Set(), read: new Set() };
+    receiptPending.current = { delivered: new Set(), read: new Set() };
+    setVisible(new Set());
+  }, [conversationId, chat.userId]);
+
+  useEffect(() => {
+    for (const state of ['delivered', 'read'] as const) {
+      const done = receiptDone.current[state];
+      const pending = receiptPending.current[state];
+      const ids = receiptCandidates(chat.messages, chat.userId, state, active, focused, visible)
+        .filter(id => !done.has(id) && !pending.has(id)).slice(0, 50);
+      if (!ids.length) continue;
+      ids.forEach(id => pending.add(id));
+      void chat.acknowledge(state, ids).then(() => {
+        ids.forEach(id => { pending.delete(id); done.add(id); });
+        setReceiptCycle(value => value + 1);
+      }).catch(() => { ids.forEach(id => pending.delete(id)); });
+    }
+  }, [active, focused, visible, chat.messages, chat.userId, chat.acknowledge, receiptCycle]);
 
   useEffect(() => {
     if (!initialScrollPending.current || chat.loading) return;
@@ -152,13 +195,15 @@ export function ConversationScreen() {
               style={s.list}
               onLayout={handleListLayout}
               data={chat.messages}
+              onViewableItemsChanged={onViewableItemsChanged}
+              viewabilityConfig={viewabilityConfig}
               keyExtractor={item => item.id}
               renderItem={({ item, index }) => {
                 const previous = chat.messages[index - 1];
                 const showDate = !previous || new Date(previous.createdAt).toDateString() !== new Date(item.createdAt).toDateString();
                 return <>
                   {showDate && <View style={s.dateRow}><Text style={s.dateChip}>{dayLabel(item.createdAt)}</Text></View>}
-                  <Bubble message={item} mine={item.senderId !== chat.conversation?.person.id} initial={chat.conversation?.person?.displayName.slice(0, 1).toUpperCase() ?? '?'} />
+                  <Bubble message={item} mine={item.senderId === chat.userId} iconsReady={iconsReady} initial={chat.conversation?.person?.displayName.slice(0, 1).toUpperCase() ?? '?'} />
                 </>;
               }}
               contentContainerStyle={s.messages}
@@ -229,6 +274,11 @@ const s = StyleSheet.create({
   ownMessage: { color: colors.onPrimary },
   time: { fontSize: 11, color: colors.onSurfaceVariant, alignSelf: 'flex-start' },
   ownTime: { color: '#dbe5ff', alignSelf: 'flex-end' },
+  metadata: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  ownMetadata: { alignSelf: 'flex-end' },
+  receipt: { color: '#b7cafa', fontSize: 14 },
+  receiptRead: { color: '#ffffff' },
+  receiptIcon: { fontFamily: 'MaterialSymbolsUI', fontSize: 16 },
   composer: { paddingHorizontal: 12, paddingVertical: 10, backgroundColor: '#ffffff', flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
   composerBar: { flex: 1, minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, borderRadius: 26, borderWidth: 1, borderColor: '#e3e6ef', backgroundColor: '#f7f8fa' },
   composerAdd: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: '#f2f3f6' },
@@ -247,3 +297,4 @@ const s = StyleSheet.create({
   newMessages: { position: 'absolute', bottom: 88, alignSelf: 'center', padding: 10, borderRadius: 20, backgroundColor: colors.surface },
   pending: { alignSelf: 'flex-end', maxWidth: '82%', padding: 12, gap: 4, backgroundColor: colors.surfaceContainerLow, borderRadius: 16 },
 });
+

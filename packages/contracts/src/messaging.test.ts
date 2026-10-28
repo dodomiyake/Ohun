@@ -30,4 +30,16 @@ describe('messaging contracts', () => {
     expect(contracts.conversationChangedSchema.parse({ conversationId: id, latestSequence: 1 })).toEqual({ conversationId: id, latestSequence: 1 });
     expect(contracts.conversationChangedSchema.safeParse({ conversationId: id, latestSequence: 1, body: 'private' }).success).toBe(false);
   });
+  it('validates bounded recipient receipt acknowledgements', () => {
+    expect(contracts).toHaveProperty('receiptRequestSchema');
+    const schema = contracts.receiptRequestSchema;
+    expect(schema.safeParse({ messageIds: [id], state: 'delivered' }).success).toBe(true);
+    expect(schema.safeParse({ messageIds: [id], state: 'read' }).success).toBe(true);
+    for (const bad of [{ messageIds: [], state: 'read' }, { messageIds: Array(51).fill(id), state: 'read' }, { messageIds: ['bad'], state: 'read' }, { messageIds: [id], state: 'sent' }, { messageIds: [id], state: 'read', userId: id }]) expect(schema.safeParse(bad).success).toBe(false);
+  });
+  it('validates server-provided message receipt states', () => {
+    const message = { id, conversationId: id, senderId: id, clientMessageId: uuid, body: 'hello', sequence: 1, createdAt: '2026-10-25T00:00:00.000Z' };
+    for (const deliveryStatus of ['sent', 'delivered', 'read']) expect(contracts.messageSchema.safeParse({ ...message, deliveryStatus }).success).toBe(true);
+    expect(contracts.messageSchema.safeParse({ ...message, deliveryStatus: 'other' }).success).toBe(false);
+  });
 });

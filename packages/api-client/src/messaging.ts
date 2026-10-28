@@ -1,4 +1,4 @@
-import { conversationSchema, conversationPageSchema, messagePageSchema, messageSchema, openDirectRequestSchema, sendMessageRequestSchema, historyQuerySchema, personIdSchema, type HistoryQuery, type SendMessageRequest } from '@ohun/contracts';
+import { conversationSchema, conversationPageSchema, messagePageSchema, messageSchema, openDirectRequestSchema, sendMessageRequestSchema, receiptRequestSchema, historyQuerySchema, personIdSchema, type HistoryQuery, type SendMessageRequest, type ReceiptRequest } from '@ohun/contracts';
 export class MessagingError extends Error {
   constructor(public code: string, message: string, public status?: number, public retryAfter?: number) { super(message); this.name = 'MessagingError'; }
 }
@@ -35,6 +35,11 @@ export function createMessagingClient(options: { baseUrl: string; fetch?: typeof
       return messagePageSchema.parse(await request(token, `/${id}/messages?${params}`));
     },
     async send(token: string, id: string, input: SendMessageRequest) { personIdSchema.parse(id); return messageSchema.parse(await request(token, `/${id}/messages`, sendMessageRequestSchema.parse(input))); },
+    async acknowledge(token: string, id: string, input: ReceiptRequest) {
+      personIdSchema.parse(id);
+      const result = await request(token, `/${id}/receipts`, receiptRequestSchema.parse(input));
+      if (!result || typeof result !== 'object' || !('ok' in result) || result.ok !== true) throw new MessagingError('invalid_response', 'Could not confirm message status.');
+    },
   };
 }
 export type MessagingClient = ReturnType<typeof createMessagingClient>;

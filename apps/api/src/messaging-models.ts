@@ -4,6 +4,7 @@ const oid = { type: Schema.Types.ObjectId, required: true } as const;
 const messageSchema = new Schema({
   conversationId: oid, senderId: oid, clientMessageId: { type: String, required: true },
   body: { type: String, required: true }, sequence: { type: Number, required: true }, createdAt: { type: Date, required: true },
+  deliveredAt: { type: Date, default: null }, readAt: { type: Date, default: null },
 }, { strict: 'throw' });
 messageSchema.index({ conversationId: 1, senderId: 1, clientMessageId: 1 }, { unique: true });
 messageSchema.index({ conversationId: 1, sequence: 1 }, { unique: true });

@@ -4,6 +4,11 @@ const message=(sequence:number,id=String(sequence),clientMessageId='00000000-000
 it('deduplicates incoming HTTP and socket messages and sorts by sequence',()=>{
  expect(mergeMessages([message(2),message(1)],[message(2),message(3)])).toEqual([message(1),message(2),message(3)]);
 });
+it('never downgrades a receipt when an older response arrives',()=>{
+ const read={...message(1),deliveryStatus:'read' as const};
+ expect(mergeMessages([read],[{...message(1),deliveryStatus:'sent' as const}])[0]?.deliveryStatus).toBe('read');
+ expect(mergeMessages([{...message(1),deliveryStatus:'sent' as const}],[read])[0]?.deliveryStatus).toBe('read');
+});
 it('settles a pending send by client id without duplicating a socket-first result',()=>{
  const pending:PendingMessage[]=[{clientMessageId:'00000000-0000-4000-8000-000000000001',senderId:message(1).senderId,body:'m1',state:'sending'}];
  expect(reconcileOutgoing(pending,[message(1)])).toEqual([]);

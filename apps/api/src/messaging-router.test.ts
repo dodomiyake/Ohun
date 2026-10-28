@@ -10,12 +10,21 @@ const input={clientMessageId:'00000000-0000-4000-8000-000000000001',body:'hello'
 const message={id,conversationId:id,senderId:id,...input,sequence:1,createdAt:'2026-10-25T00:00:00.000Z'};
 function setup() {
  const auth={authenticate:vi.fn(async(token:string)=>{if(token!=='valid')throw new Error();return {userId:id,sessionId:id};})} as unknown as AuthService;
- const service={openDirect:vi.fn(),list:vi.fn(async()=>({conversations:[],nextCursor:null})),history:vi.fn(),send:vi.fn(async()=>({message,participantIds:[id,other],created:true}))} as unknown as MessagingService;
+ const service={openDirect:vi.fn(),list:vi.fn(async()=>({conversations:[],nextCursor:null})),history:vi.fn(),send:vi.fn(async()=>({message,participantIds:[id,other],created:true})),acknowledge:vi.fn(async()=>({participantIds:[id,other],latestSequence:1,changed:true}))} as unknown as MessagingService;
  const publish=vi.fn(async()=>{});const app=express();app.use(express.json());app.use('/api/v1/conversations',createMessagingRouter(auth,service,publish));
  app.use((error:unknown,_req:express.Request,res:express.Response,_next:express.NextFunction)=>{res.status(error instanceof AuthError?error.status:error instanceof ZodError?400:500).json({error:{code:error instanceof AuthError?error.code:'invalid_request'}});});
  return {app,service,publish};
 }
 describe('messaging HTTP boundary',()=>{
+ it('authenticates and publishes recipient receipt updates',async()=>{
+  const {app,service,publish}=setup();const body={messageIds:[other],state:'read'};
+  expect((await request(app).post(`/api/v1/conversations/${id}/receipts`).send(body)).status).toBe(401);
+  const response=await request(app).post(`/api/v1/conversations/${id}/receipts`).set('Authorization','Bearer valid').send(body);
+  expect(response.status).toBe(200);expect(response.body).toEqual({ok:true});
+  expect(service.acknowledge).toHaveBeenCalledWith(id,id,body);
+  expect(publish).toHaveBeenCalledWith([id,other],{conversationId:id,latestSequence:1});
+  expect((await request(app).post(`/api/v1/conversations/${id}/receipts`).set('Authorization','Bearer valid').send({...body,userId:other})).status).toBe(400);
+ });
  it('requires credentials for all reads and writes',async()=>{
   const {app}=setup();for(const path of ['',`/${id}/messages`])expect((await request(app).get(`/api/v1/conversations${path}`)).status).toBe(401);
   for(const path of ['/direct',`/${id}/messages`])expect((await request(app).post(`/api/v1/conversations${path}`).send(input)).status).toBe(401);
